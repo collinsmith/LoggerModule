@@ -7,13 +7,13 @@
 
 unsigned int Logger::getVerbosity() const {
 	return m_Verbosity;
-};
+}
 
 unsigned int Logger::setVerbosity(unsigned int verbosity) {
 	int old = m_Verbosity;
 	m_Verbosity = verbosity;
 	return old;
-};
+}
 
 void Logger::log(int severity, const char* format, ...) const {
 	if (m_Verbosity <= severity) {
@@ -40,7 +40,7 @@ void Logger::log(int severity, const char* format, ...) const {
 	va_end(arglst);
 
 	// "[%-5severity] [%time] %message"
-};
+}
 
 void OnAmxxAttach() {
 	//...
@@ -54,3 +54,37 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 	MF_LogError(amx, AMX_ERR_NATIVE, "");
 }
 
+static cell AMX_NATIVE_CALL LoggerDestroy(AMX* amx, cell* params) {
+	//...
+}
+
+static cell AMX_NATIVE_CALL LoggerGetVerbosity(AMX* amx, cell* params) {
+	//...
+}
+
+static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
+	//...
+}
+
+static cell AMX_NATIVE_CALL LoggerIsLogging(AMX* amx, cell* params) {
+	//...
+}
+
+static cell AMX_NATIVE_CALL LoggerSetLogging(AMX* amx, cell* params) {
+	//...
+}
+
+static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
+	//...
+}
+
+AMX_NATIVE_INFO amxmodx_Natives[] = {
+	{ "LoggerCreate",		LoggerCreate },
+	{ "LoggerDestroy",		LoggerDestroy },
+	{ "LoggerGetVerbosity",	LoggerGetVerbosity },
+	{ "LoggerSetVerbosity",	LoggerSetVerbosity },
+	{ "LoggerIsLogging",	LoggerIsLogging },
+	{ "LoggerSetLogging",	LoggerSetLogging },
+	{ "LoggerLog",			LoggerLog },
+	{ NULL,					NULL }
+};

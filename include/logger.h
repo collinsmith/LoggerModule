@@ -21,6 +21,20 @@
 
 class Logger {
 private:
+	static bool m_isLogging;
+
+public:
+	static bool isLogging() {
+		return m_isLogging;
+	};
+
+	static bool setLogging(bool enabled) {
+		bool wasLogging = m_isLogging;
+		m_isLogging = enabled;
+		return wasLogging;
+	};
+
+private:
 	const char* m_pNameFormat;
 	const char* m_pMessageFormat;
 	const char* m_pDateFormat;
@@ -41,8 +55,7 @@ public:
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
 				m_Verbosity(verbosity),
-				m_pPath(path) {
-	};
+				m_pPath(path) {};
 
 	~Logger() {
 		free((char*)m_pNameFormat);
