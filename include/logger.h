@@ -2,16 +2,8 @@
 #define _LOGGER_H_
 
 #include <assert.h>
-#include <cstdlib>
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
 
 #include "native_handler.h"
-
-#if defined(_WIN32)
-	#include <io.h>
-#endif
 
 #define SEVERITY_HIGHEST SEVERITY_ERROR
 #define SEVERITY_ERROR	 301
@@ -29,7 +21,7 @@ public:
 		return m_AllVerbosity;
 	};
 
-	static bool setAllVerbosity(int verbosity) {
+	static int setAllVerbosity(int verbosity) {
 		assert(SEVERITY_NONE <= verbosity);
 		int oldVerbosity = m_AllVerbosity;
 		m_AllVerbosity = verbosity;
@@ -70,6 +62,11 @@ public:
 public:
 	int getVerbosity() const;
 	int setVerbosity(int verbosity);
+	const char* getNameFormat() const;
+	const char* getMessageFormat() const;
+	const char* getDateFormat() const;
+	const char* getTimeFormat() const;
+	const char* getPath() const;
 	void log(int severity, const char* format, ...) const;
 };
 
