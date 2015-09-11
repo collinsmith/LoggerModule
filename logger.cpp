@@ -81,6 +81,7 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 			verbosity, path));
 }
 
+// native bool:LoggerDestroy(&Logger:logger);
 static cell AMX_NATIVE_CALL LoggerDestroy(AMX* amx, cell* params) {
 	cell* ptr = g_fn_GetAmxAddr(amx, params[1]);
 	Logger* logger = LoggerHandles.lookup(*ptr);
@@ -96,6 +97,7 @@ static cell AMX_NATIVE_CALL LoggerDestroy(AMX* amx, cell* params) {
 	return 0;
 }
 
+// native Severity:LoggerGetVerbosity(Logger:logger);
 static cell AMX_NATIVE_CALL LoggerGetVerbosity(AMX* amx, cell* params) {
 	if (params[1] == ALL_LOGGERS) {
 		return Logger::getAllVerbosity();
@@ -110,6 +112,7 @@ static cell AMX_NATIVE_CALL LoggerGetVerbosity(AMX* amx, cell* params) {
 	return logger->getVerbosity();
 }
 
+// native Severity:LoggerSetVerbosity(Logger:logger, Severity:verbosity);
 static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
 	if (params[2] < SEVERITY_NONE) {
 		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger verbosity level provided (%d)", params[2]);
@@ -129,15 +132,7 @@ static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
 	return logger->setVerbosity(params[2]);
 }
 
-static cell AMX_NATIVE_CALL LoggerIsLogging(AMX* amx, cell* params) {
-	//...
-}
-
-static cell AMX_NATIVE_CALL LoggerSetLogging(AMX* amx, cell* params) {
-	//...
-}
-
-// 
+// native LoggerLog(Logger:logger, Severity:severity, const format[], any:...);
 static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	//...
 }
@@ -147,8 +142,6 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 	{ "LoggerDestroy",		LoggerDestroy },
 	{ "LoggerGetVerbosity",	LoggerGetVerbosity },
 	{ "LoggerSetVerbosity",	LoggerSetVerbosity },
-	{ "LoggerIsLogging",	LoggerIsLogging },
-	{ "LoggerSetLogging",	LoggerSetLogging },
 	{ "LoggerLog",			LoggerLog },
 	{ NULL,					NULL }
 };
