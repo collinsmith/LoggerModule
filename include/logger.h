@@ -1,10 +1,13 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
+#include <assert.h>
 #include <cstdlib>
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+
+#include "native_handler.h"
 
 #if defined(_WIN32)
 	#include <io.h>
@@ -19,17 +22,18 @@
 
 class Logger {
 private:
-	static bool m_isLogging;
+	static int m_AllVerbosity;
 
 public:
-	static bool isLogging() {
-		return m_isLogging;
+	static int getAllVerbosity() {
+		return m_AllVerbosity;
 	};
 
-	static bool setLogging(bool enabled) {
-		bool wasLogging = m_isLogging;
-		m_isLogging = enabled;
-		return wasLogging;
+	static bool setAllVerbosity(int verbosity) {
+		assert(SEVERITY_NONE <= verbosity);
+		int oldVerbosity = m_AllVerbosity;
+		m_AllVerbosity = verbosity;
+		return oldVerbosity;
 	};
 
 private:
@@ -69,4 +73,6 @@ public:
 	void log(int severity, const char* format, ...) const;
 };
 
-#endif
+extern NativeHandler<Logger> LoggerHandles;
+
+#endif // _LOGGER_H_
