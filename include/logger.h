@@ -10,14 +10,12 @@
 	#include <io.h>
 #endif
 
-#define SEVERITY_ERROR 1000
-#define SEVERITY_WARN 1000
-#define SEVERITY_INFO 1000
-#define SEVERITY_DEBUG 1000
-#define SEVERITY_NONE 1000
-
-//#include <amxmodx.h>
-//#include <natives_handles.h>
+#define SEVERITY_HIGHEST SEVERITY_ERROR
+#define SEVERITY_ERROR	 301
+#define SEVERITY_WARN	 201
+#define SEVERITY_INFO	 101
+#define SEVERITY_DEBUG	 1
+#define SEVERITY_NONE	 0
 
 class Logger {
 private:
@@ -41,14 +39,14 @@ private:
 	const char* m_pTimeFormat;
 	const char* m_pPath;
 
-	unsigned int m_Verbosity;
+	int m_Verbosity;
 
 public:
 	Logger(const char* nameFormat,
 				const char* messageFormat,
 				const char* dateFormat,
 				const char* timeFormat,
-				unsigned int verbosity,
+				int verbosity,
 				const char* path)
 			: m_pNameFormat(nameFormat),
 				m_pMessageFormat(messageFormat),
@@ -66,11 +64,9 @@ public:
 	};
 
 public:
-	unsigned int getVerbosity() const;
-	unsigned int setVerbosity(unsigned int verbosity);
+	int getVerbosity() const;
+	int setVerbosity(int verbosity);
 	void log(int severity, const char* format, ...) const;
 };
-
-//extern NativeHandle<Logger> LoggerHandles;
 
 #endif
