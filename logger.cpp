@@ -1,24 +1,10 @@
-// $(METAMOD);$(HLSDK)\public;$(HLSDK)\dlls;$(HLSDK)\engine;$(HLSDK)\common;D:\projects\cpp\logger\public\amtl\amtl;%(AdditionalIncludeDirectories)
-
-#include <assert.h>
-//#include <stdio.h>
-#include <stdarg.h>
-//#include <cstdlib>
+#include <amxxmodule.h>
 #include <time.h>
-
-//#if defined(_WIN32)
-//	#include <io.h>
-//#endif
-
-//#include "util.h"
-
 #include <am-string.h>
+#include <logger.h>
+
 extern ke::AString g_log_dir;
 ke::AString g_log_dir;
-
-#include <amxxmodule.h>
-
-#include <logger.h>
 
 #define INVALID_LOGGER  0
 #define ALL_LOGGERS    -1

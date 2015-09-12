@@ -1,8 +1,6 @@
 #ifndef _LOGGER_H_
 #define _LOGGER_H_
 
-#include <assert.h>
-
 #include "native_handler.h"
 
 #define LOG_SEVERITY_HIGHEST LOG_SEVERITY_ERROR
