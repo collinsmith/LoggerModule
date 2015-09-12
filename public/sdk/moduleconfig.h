@@ -26,8 +26,8 @@
  *   to add multiple entries.
  */
 #define MODULE_NAME "Logger"
-#define MODULE_VERSION "0.0.1"
-#define MODULE_AUTHOR "Collin \"Tirant\" Smith"
+#define MODULE_VERSION "1.0.0"
+#define MODULE_AUTHOR "Tirant"
 #define MODULE_URL "collinsmith70@gmail.com"
 #define MODULE_LOGTAG "LOGGER"
 #define MODULE_LIBRARY "logger"

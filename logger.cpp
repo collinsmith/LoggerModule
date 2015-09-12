@@ -1,7 +1,5 @@
 // $(METAMOD);$(HLSDK)\public;$(HLSDK)\dlls;$(HLSDK)\engine;$(HLSDK)\common;D:\projects\cpp\logger\public\amtl\amtl;%(AdditionalIncludeDirectories)
 
-#define HAVE_STDINT_H
-
 #include <assert.h>
 //#include <stdio.h>
 #include <stdarg.h>
@@ -14,16 +12,20 @@
 
 //#include "util.h"
 
-#include "public\sdk\amxxmodule.h"
+#include <am-string.h>
+extern ke::AString g_log_dir;
+ke::AString g_log_dir;
 
-#include "include\logger.h"
+#include <amxxmodule.h>
+
+#include <logger.h>
 
 #define INVALID_LOGGER  0
 #define ALL_LOGGERS    -1
 
 NativeHandler<Logger> LoggerHandles;
 
-bool m_LoggedErrMap = false;
+bool m_LoggedMap = false;
 
 int Logger::m_AllVerbosity = LOG_SEVERITY_LOWEST;
 
@@ -93,8 +95,6 @@ void Logger::log(int severity, const char* format, ...) const {
 //		verbosity = DEFAULT_LOGGER_VERBOSITY,
 //		const path[] = DEFAULT_LOGGER_PATH);
 static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
-	MF_LogError(amx, AMX_ERR_NATIVE, "");
-
 	int len;
 	char* nameFormat = MF_GetAmxString(amx, params[1], 0, &len);
 	char* msgFormat = MF_GetAmxString(amx, params[2], 0, &len);
@@ -107,7 +107,8 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 			msgFormat,
 			dateFormat,
 			timeFormat,
-			verbosity, path));
+			verbosity,
+			path));
 }
 
 // native bool:LoggerDestroy(&Logger:logger);
@@ -161,6 +162,25 @@ static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
 	return logger->setVerbosity(params[2]);
 }
 
+const char* VERBOSITY[] = {
+	"ERROR",
+	"WARN",
+	"INFO",
+	"DEBUG"
+};
+
+int toIndex(int severity) {
+	if (severity >= LOG_SEVERITY_ERROR) {
+		return 0;
+	} else if (severity >= LOG_SEVERITY_WARN) {
+		return 1;
+	} else if (severity >= LOG_SEVERITY_INFO) {
+		return 2;
+	} else {
+		return 3;
+	}
+}
+
 // native LoggerLog(Logger:logger, Severity:severity, const format[], any:...);
 static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	if (params[2] < Logger::getAllVerbosity()) {
@@ -173,7 +193,8 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 		return 0;
 	}
 	
-	if (params[2] < logger->getVerbosity()) {
+	int severity = params[2];
+	if (severity < logger->getVerbosity()) {
 		return 0;
 	}
 
@@ -196,26 +217,30 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 
 	va_list arglst;
 	va_start(arglst, format);
-	vsnprintf(msg, 4095, format, arglst);
+	ke::SafeVsprintf(msg, 4095, format, arglst);
 	va_end(arglst);
 
 	FILE *pF = NULL;
-	//UTIL_Format(name, 255, "%s/error_%04d%02d%02d.log", g_log_dir.chars(), curTime->tm_year + 1900, curTime->tm_mon + 1, curTime->tm_mday);
+	UTIL_Format(name, 255, "%s/%s_%04d%02d%02d.log", g_log_dir.chars(), logger->getNameFormat(), curTime->tm_year + 1900, curTime->tm_mon + 1, curTime->tm_mday);
 	MF_BuildPathnameR(file, 255, "%s", name);
 	pF = fopen(file, "a+");
 
 	if (pF) {
-		if (!m_LoggedErrMap) {
-			fprintf(pF, "L %s: Start of error session.\n", date);
-			//fprintf(pF, "L %s: Info (map \"%s\") (file \"%s\")\n", date, STRING(gpGlobals->mapname), name);
-			m_LoggedErrMap = true;
+		if (!m_LoggedMap) {
+			fprintf(pF, "[%-5s] [%s] Start of error session.\n", VERBOSITY[2], time);
+			fprintf(pF, "[%-5s] [%s] Info (map \"%s\") (file \"%s\")\n", VERBOSITY[2], time, STRING(gpGlobals->mapname), name);
+			m_LoggedMap = true;
 		}
 
-		fprintf(pF, "L %s: %s\n", date, msg);
+		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, msg);
 		fclose(pF);
+	} else {
+		ALERT(at_logged, "[AMXX] Unexpected fatal logging error (couldn't open %s for a+). AMXX Error Logging disabled for this map.\n", file);
+		return 0;
 	}
 
-	MF_PrintSrvConsole("L %s: %s\n", date, msg);
+	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, msg);
+	return 1;
 }
 
 AMX_NATIVE_INFO amxmodx_Natives[] = {

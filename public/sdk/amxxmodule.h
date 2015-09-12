@@ -18,7 +18,7 @@
 
 // config
 #include "moduleconfig.h"
-#include "..\IGameConfigs.h"
+#include <IGameConfigs.h>
 
 #include <stddef.h> // size_t
 // metamod include files

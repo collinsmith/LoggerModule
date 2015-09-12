@@ -4,6 +4,24 @@
 #define _logger_const_included
 
 /*******************************************************************************
+ * DATA / DEFINITIONS
+ ******************************************************************************/
+
+enum Logger {
+    All_Loggers = -1,
+    Invalid_Logger
+};
+
+enum /*Severity*/ {
+    Severity_Invalid = -1,
+    Severity_None    = 0,
+    Severity_Debug   = 1,
+    Severity_Info    = 101,
+    Severity_Warn    = 201,
+    Severity_Error   = 301,
+};
+
+/*******************************************************************************
  * CONSTANTS
  ******************************************************************************/
 
@@ -21,22 +39,3 @@ stock const SEVERITY_INFO_STRING[] = "INFO";
 stock const SEVERITY_WARN_STRING[] = "WARN";
 stock const SEVERITY_ERROR_STRING[] = "ERROR";
 stock const SEVERITY_NONE_STRING[] = "NONE";
-
-/*******************************************************************************
- * DATA / DEFINITIONS
- ******************************************************************************/
-
-enum Logger {
-    All_Loggers = -1,
-    Invalid_Logger
-};
-
-enum Severity {
-    Severity_Invalid = -1,
-    Severity_All,
-    Severity_Debug,
-    Severity_Info,
-    Severity_Warn,
-    Severity_Error,
-    Severity_None
-};
