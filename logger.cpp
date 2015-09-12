@@ -41,23 +41,23 @@ int Logger::setVerbosity(int verbosity) {
 }
 
 const char* Logger::getNameFormat() const {
-	return m_pNameFormat;
+	return m_pNameFormat.chars();
 }
 
 const char* Logger::getMessageFormat() const {
-	return m_pMessageFormat;
+	return m_pMessageFormat.chars();
 }
 
 const char* Logger::getDateFormat() const {
-	return m_pDateFormat;
+	return m_pDateFormat.chars();
 }
 
 const char* Logger::getTimeFormat() const {
-	return m_pTimeFormat;
+	return m_pTimeFormat.chars();
 }
 
 const char* Logger::getPath() const {
-	return m_pPath;
+	return m_pPath.chars();
 }
 
 void Logger::log(int severity, const char* format, ...) const {
@@ -71,10 +71,10 @@ void Logger::log(int severity, const char* format, ...) const {
 	tm *curTime = localtime(&td);
 
 	char date[16];
-	strftime(date, 15, m_pDateFormat, curTime);
+	strftime(date, 15, getDateFormat(), curTime);
 
 	char time[16];
-	strftime(time, 15, m_pTimeFormat, curTime);
+	strftime(time, 15, getTimeFormat(), curTime);
 
 	// msg
 	static char msg[3072];

@@ -30,11 +30,11 @@ public:
 	};
 
 private:
-	const char* m_pNameFormat;
-	const char* m_pMessageFormat;
-	const char* m_pDateFormat;
-	const char* m_pTimeFormat;
-	const char* m_pPath;
+	ke::AString m_pNameFormat;
+	ke::AString m_pMessageFormat;
+	ke::AString m_pDateFormat;
+	ke::AString m_pTimeFormat;
+	ke::AString m_pPath;
 
 	int m_Verbosity;
 
@@ -51,14 +51,6 @@ public:
 				m_pTimeFormat(timeFormat),
 				m_Verbosity(verbosity),
 				m_pPath(path) {};
-
-	~Logger() {
-		free((char*)m_pNameFormat);
-		free((char*)m_pMessageFormat);
-		free((char*)m_pDateFormat);
-		free((char*)m_pTimeFormat);
-		free((char*)m_pPath);
-	};
 
 public:
 	int getVerbosity() const;
