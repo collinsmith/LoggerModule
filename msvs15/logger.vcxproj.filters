@@ -36,4 +36,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\amxmodx\scripting\include\logger.inc">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\amxmodx\scripting\include\logger_const.inc">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\amxmodx\scripting\include\logger_stocks.inc">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

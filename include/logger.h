@@ -5,12 +5,13 @@
 
 #include "native_handler.h"
 
-#define SEVERITY_HIGHEST SEVERITY_ERROR
-#define SEVERITY_ERROR	 301
-#define SEVERITY_WARN	 201
-#define SEVERITY_INFO	 101
-#define SEVERITY_DEBUG	 1
-#define SEVERITY_NONE	 0
+#define LOG_SEVERITY_HIGHEST LOG_SEVERITY_ERROR
+#define LOG_SEVERITY_LOWEST  LOG_SEVERITY_DEBUG
+#define LOG_SEVERITY_ERROR	 301
+#define LOG_SEVERITY_WARN	 201
+#define LOG_SEVERITY_INFO	 101
+#define LOG_SEVERITY_DEBUG	 1
+#define LOG_SEVERITY_NONE	 0
 
 class Logger {
 private:
@@ -22,7 +23,7 @@ public:
 	};
 
 	static int setAllVerbosity(int verbosity) {
-		assert(SEVERITY_NONE <= verbosity);
+		assert(LOG_SEVERITY_NONE <= verbosity);
 		int oldVerbosity = m_AllVerbosity;
 		m_AllVerbosity = verbosity;
 		return oldVerbosity;

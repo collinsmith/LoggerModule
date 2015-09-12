@@ -1,3 +1,7 @@
+// $(METAMOD);$(HLSDK)\public;$(HLSDK)\dlls;$(HLSDK)\engine;$(HLSDK)\common;D:\projects\cpp\logger\public\amtl\amtl;%(AdditionalIncludeDirectories)
+
+#define HAVE_STDINT_H
+
 #include <assert.h>
 //#include <stdio.h>
 #include <stdarg.h>
@@ -8,7 +12,7 @@
 //	#include <io.h>
 //#endif
 
-//#include <util.h>
+//#include "util.h"
 
 #include "public\sdk\amxxmodule.h"
 
@@ -21,12 +25,14 @@ NativeHandler<Logger> LoggerHandles;
 
 bool m_LoggedErrMap = false;
 
+int Logger::m_AllVerbosity = LOG_SEVERITY_LOWEST;
+
 int Logger::getVerbosity() const {
 	return m_Verbosity;
 }
 
 int Logger::setVerbosity(int verbosity) {
-	assert (SEVERITY_NONE <= verbosity);
+	assert (LOG_SEVERITY_NONE <= verbosity);
 	int oldVerbosity = m_Verbosity;
 	m_Verbosity = verbosity;
 	return oldVerbosity;
@@ -77,14 +83,6 @@ void Logger::log(int severity, const char* format, ...) const {
 	va_end(arglst);
 
 	// "[%-5severity] [%time] %message"
-}
-
-void OnAmxxAttach() {
-	//...
-}
-
-void OnAmxxDetach() {
-	//...
 }
 
 // native Logger:LoggerCreate(
@@ -145,7 +143,7 @@ static cell AMX_NATIVE_CALL LoggerGetVerbosity(AMX* amx, cell* params) {
 
 // native Severity:LoggerSetVerbosity(Logger:logger, Severity:verbosity);
 static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
-	if (params[2] < SEVERITY_NONE) {
+	if (params[2] < LOG_SEVERITY_NONE) {
 		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger verbosity level provided (%d)", params[2]);
 		return 0;
 	}
@@ -228,3 +226,11 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 	{ "LoggerLog",			LoggerLog },
 	{ NULL,					NULL }
 };
+
+void OnAmxxAttach() {
+	MF_AddNatives(amxmodx_Natives);
+}
+
+void OnAmxxDetach() {
+	//...
+}
