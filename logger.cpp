@@ -201,21 +201,33 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
 
 	FILE *pF = NULL;
-	UTIL_Format(name, 255, "%s/%s_%s.log", g_log_dir.chars(), logger->getNameFormat(), date);
+	if (logger->getPath()[0]) {
+		UTIL_Format(name, 255, "%s/%s/%s_%s.log",
+				MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
+				logger->getPath(),
+				logger->getNameFormat(),
+				date);
+	} else {
+		UTIL_Format(name, 255, "%s/%s_%s.log",
+				MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
+				logger->getNameFormat(),
+				date);
+	}
+	
 	MF_BuildPathnameR(file, 255, "%s", name);
 	pF = fopen(file, "a+");
 
 	if (pF) {
 		if (!m_LoggedMap) {
-			fprintf(pF, "[%-5s] [%s] Start of error session.\n", VERBOSITY[2], time);
-			fprintf(pF, "[%-5s] [%s] Info (map \"%s\") (file \"%s\")\n", VERBOSITY[2], time, STRING(gpGlobals->mapname), name);
+			fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[2], time);
+			fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[2], time, STRING(gpGlobals->mapname), name);
 			m_LoggedMap = true;
 		}
 
 		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(params[2])], time, buffer);
 		fclose(pF);
 	} else {
-		ALERT(at_logged, "[AMXX] Unexpected fatal logging error (couldn't open %s for a+). AMXX Error Logging disabled for this map.\n", file);
+		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", file);
 		return 0;
 	}
 
