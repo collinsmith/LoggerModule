@@ -39,17 +39,17 @@ private:
 	int m_Verbosity;
 
 public:
-	Logger(const char* nameFormat,
+	Logger(int verbosity,
+				const char* nameFormat,
 				const char* messageFormat,
 				const char* dateFormat,
 				const char* timeFormat,
-				int verbosity,
 				const char* path)
-			: m_pNameFormat(nameFormat),
+			: m_Verbosity(verbosity),
+				m_pNameFormat(nameFormat),
 				m_pMessageFormat(messageFormat),
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
-				m_Verbosity(verbosity),
 				m_pPath(path) {};
 
 public:

@@ -88,26 +88,26 @@ void Logger::log(int severity, const char* format, ...) const {
 }
 
 // native Logger:LoggerCreate(
+//		verbosity = DEFAULT_LOGGER_VERBOSITY,
 //		const nameFormat[] = DEFAULT_LOGGER_NAME_FORMAT,
 //		const msgFormat[] = DEFAULT_LOGGER_MSG_FORMAT,
 //		const dateFormat[] = DEFAULT_LOGGER_DATE_FORMAT,
 //		const timeFormat[] = DEFAULT_LOGGER_TIME_FORMAT,
-//		verbosity = DEFAULT_LOGGER_VERBOSITY,
 //		const path[] = DEFAULT_LOGGER_PATH);
 static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 	int len;
-	char* nameFormat = MF_GetAmxString(amx, params[1], 0, &len);
-	char* msgFormat = MF_GetAmxString(amx, params[2], 0, &len);
-	char* dateFormat = MF_GetAmxString(amx, params[3], 0, &len);
-	char* timeFormat = MF_GetAmxString(amx, params[4], 0, &len);
-	int verbosity = params[5];
-	char* path = MF_GetAmxString(amx, params[6], 0, &len);
+	int verbosity = params[1];
+	char* nameFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	char* msgFormat = MF_GetAmxString(amx, params[3], 1, &len);
+	char* dateFormat = MF_GetAmxString(amx, params[4], 2, &len);
+	char* timeFormat = MF_GetAmxString(amx, params[5], 3, &len);
+	char* path = MF_GetAmxString(amx, params[6], 4, &len);
 	return static_cast<cell>(LoggerHandles.create(
+			verbosity,
 			nameFormat,
 			msgFormat,
 			dateFormat,
 			timeFormat,
-			verbosity,
 			path));
 }
 
@@ -193,8 +193,7 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 		return 0;
 	}
 	
-	int severity = params[2];
-	if (severity < logger->getVerbosity()) {
+	if (params[2] < logger->getVerbosity()) {
 		return 0;
 	}
 
@@ -206,17 +205,17 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	tm* curTime = localtime(&td);
 
 	char date[16];
-	strftime(date, sizeof(date), "%Y-%m-%d", curTime);
-
+	strftime(date, sizeof(date), logger->getDateFormat(), curTime);
+	
 	char time[16];
-	strftime(time, sizeof(time), "%H:%M:%S", curTime);
+	strftime(time, sizeof(time), logger->getTimeFormat(), curTime);
 
 	int len;
 	char* format = MF_GetAmxString(amx, params[3], 0, &len);
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
 
 	FILE *pF = NULL;
-	UTIL_Format(name, 255, "%s/%s_%04d%02d%02d.log", g_log_dir.chars(), logger->getNameFormat(), curTime->tm_year + 1900, curTime->tm_mon + 1, curTime->tm_mday);
+	UTIL_Format(name, 255, "%s/%s_%s.log", g_log_dir.chars(), logger->getNameFormat(), date);
 	MF_BuildPathnameR(file, 255, "%s", name);
 	pF = fopen(file, "a+");
 
@@ -227,14 +226,14 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 			m_LoggedMap = true;
 		}
 
-		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, buffer);
+		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(params[2])], time, buffer);
 		fclose(pF);
 	} else {
 		ALERT(at_logged, "[AMXX] Unexpected fatal logging error (couldn't open %s for a+). AMXX Error Logging disabled for this map.\n", file);
 		return 0;
 	}
 
-	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, buffer);
+	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(params[2])], time, buffer);
 	return 1;
 }
 
