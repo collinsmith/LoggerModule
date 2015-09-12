@@ -200,25 +200,20 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 
 	static char file[256];
 	static char name[256];
-	static char msg[4096];
 
 	time_t td;
 	time(&td);
 	tm* curTime = localtime(&td);
 
 	char date[16];
-	strftime(date, 15, logger->getDateFormat(), curTime);
+	strftime(date, sizeof(date), "%Y-%m-%d", curTime);
 
 	char time[16];
-	strftime(time, 15, logger->getTimeFormat(), curTime);
+	strftime(time, sizeof(time), "%H:%M:%S", curTime);
 
 	int len;
 	char* format = MF_GetAmxString(amx, params[3], 0, &len);
-
-	va_list arglst;
-	va_start(arglst, format);
-	ke::SafeVsprintf(msg, 4095, format, arglst);
-	va_end(arglst);
+	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
 
 	FILE *pF = NULL;
 	UTIL_Format(name, 255, "%s/%s_%04d%02d%02d.log", g_log_dir.chars(), logger->getNameFormat(), curTime->tm_year + 1900, curTime->tm_mon + 1, curTime->tm_mday);
@@ -232,14 +227,14 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 			m_LoggedMap = true;
 		}
 
-		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, msg);
+		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, buffer);
 		fclose(pF);
 	} else {
 		ALERT(at_logged, "[AMXX] Unexpected fatal logging error (couldn't open %s for a+). AMXX Error Logging disabled for this map.\n", file);
 		return 0;
 	}
 
-	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, msg);
+	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, buffer);
 	return 1;
 }
 
