@@ -3,9 +3,6 @@
 #include <am-string.h>
 #include <logger.h>
 
-extern ke::AString g_log_dir;
-ke::AString g_log_dir;
-
 #define INVALID_LOGGER  0
 #define ALL_LOGGERS    -1
 
