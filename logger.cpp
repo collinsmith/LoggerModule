@@ -10,6 +10,25 @@ NativeHandler<Logger> LoggerHandles;
 
 bool m_LoggedMap = false;
 
+const char* VERBOSITY[] = {
+	"ERROR",
+	"WARN",
+	"INFO",
+	"DEBUG"
+};
+
+int toIndex(int severity) {
+	if (severity >= LOG_SEVERITY_ERROR) {
+		return 0;
+	} else if (severity >= LOG_SEVERITY_WARN) {
+		return 1;
+	} else if (severity >= LOG_SEVERITY_INFO) {
+		return 2;
+	} else {
+		return 3;
+	}
+}
+
 int Logger::m_AllVerbosity = LOG_SEVERITY_LOWEST;
 
 int Logger::getVerbosity() const {
@@ -43,31 +62,58 @@ const char* Logger::getPath() const {
 	return m_pPath.chars();
 }
 
-void Logger::log(int severity, const char* format, ...) const {
-	if (getVerbosity() <= severity) {
+void Logger::log(int severity, const char* message) const {
+	if (severity < getVerbosity()) {
 		return;
 	}
 
-	// get time
+	static char file[256];
+	static char name[256];
+
 	time_t td;
 	time(&td);
-	tm *curTime = localtime(&td);
+	tm* curTime = localtime(&td);
 
 	char date[16];
-	strftime(date, 15, getDateFormat(), curTime);
+	strftime(date, sizeof(date), getDateFormat(), curTime);
 
 	char time[16];
-	strftime(time, 15, getTimeFormat(), curTime);
+	strftime(time, sizeof(time), getTimeFormat(), curTime);
 
-	// msg
-	static char msg[3072];
 
-	va_list arglst;
-	va_start(arglst, format);
-	vsnprintf(msg, 3071, format, arglst);
-	va_end(arglst);
 
-	// "[%-5severity] [%time] %message"
+	FILE *pF = NULL;
+	if (getPath()[0]) {
+		UTIL_Format(name, 255, "%s/%s/%s_%s.log",
+			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
+			getPath(),
+			getNameFormat(),
+			date);
+	} else {
+		UTIL_Format(name, 255, "%s/%s_%s.log",
+			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
+			getNameFormat(),
+			date);
+	}
+
+	MF_BuildPathnameR(file, 255, "%s", name);
+	pF = fopen(file, "a+");
+
+	if (pF) {
+		if (!m_LoggedMap) {
+			fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[2], time);
+			fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[2], time, STRING(gpGlobals->mapname), name);
+			m_LoggedMap = true;
+		}
+
+		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, message);
+		fclose(pF);
+	} else {
+		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", file);
+		return;
+	}
+
+	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, message);
 }
 
 // native Logger:LoggerCreate(
@@ -145,25 +191,6 @@ static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
 	return logger->setVerbosity(params[2]);
 }
 
-const char* VERBOSITY[] = {
-	"ERROR",
-	"WARN",
-	"INFO",
-	"DEBUG"
-};
-
-int toIndex(int severity) {
-	if (severity >= LOG_SEVERITY_ERROR) {
-		return 0;
-	} else if (severity >= LOG_SEVERITY_WARN) {
-		return 1;
-	} else if (severity >= LOG_SEVERITY_INFO) {
-		return 2;
-	} else {
-		return 3;
-	}
-}
-
 // native LoggerLog(Logger:logger, Severity:severity, const format[], any:...);
 static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	if (params[2] < Logger::getAllVerbosity()) {
@@ -175,60 +202,10 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
 		return 0;
 	}
-	
-	if (params[2] < logger->getVerbosity()) {
-		return 0;
-	}
-
-	static char file[256];
-	static char name[256];
-
-	time_t td;
-	time(&td);
-	tm* curTime = localtime(&td);
-
-	char date[16];
-	strftime(date, sizeof(date), logger->getDateFormat(), curTime);
-	
-	char time[16];
-	strftime(time, sizeof(time), logger->getTimeFormat(), curTime);
 
 	int len;
-	char* format = MF_GetAmxString(amx, params[3], 0, &len);
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-
-	FILE *pF = NULL;
-	if (logger->getPath()[0]) {
-		UTIL_Format(name, 255, "%s/%s/%s_%s.log",
-				MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
-				logger->getPath(),
-				logger->getNameFormat(),
-				date);
-	} else {
-		UTIL_Format(name, 255, "%s/%s_%s.log",
-				MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
-				logger->getNameFormat(),
-				date);
-	}
-	
-	MF_BuildPathnameR(file, 255, "%s", name);
-	pF = fopen(file, "a+");
-
-	if (pF) {
-		if (!m_LoggedMap) {
-			fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[2], time);
-			fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[2], time, STRING(gpGlobals->mapname), name);
-			m_LoggedMap = true;
-		}
-
-		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(params[2])], time, buffer);
-		fclose(pF);
-	} else {
-		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", file);
-		return 0;
-	}
-
-	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(params[2])], time, buffer);
+	logger->log(params[2], buffer);
 	return 1;
 }
 

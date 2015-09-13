@@ -58,7 +58,7 @@ public:
 	const char* getDateFormat() const;
 	const char* getTimeFormat() const;
 	const char* getPath() const;
-	void log(int severity, const char* format, ...) const;
+	void log(int severity, const char* message) const;
 };
 
 extern NativeHandler<Logger> LoggerHandles;
