@@ -28,11 +28,11 @@ public:
 	};
 
 private:
-	ke::AString m_pNameFormat;
-	ke::AString m_pMessageFormat;
-	ke::AString m_pDateFormat;
-	ke::AString m_pTimeFormat;
-	ke::AString m_pPath;
+	const ke::AString m_pNameFormat;
+	const ke::AString m_pMessageFormat;
+	const ke::AString m_pDateFormat;
+	const ke::AString m_pTimeFormat;
+	const ke::AString m_pPath;
 
 	int m_Verbosity;
 
@@ -44,11 +44,11 @@ public:
 				const char* timeFormat,
 				const char* path)
 			: m_Verbosity(verbosity),
-				m_pNameFormat(nameFormat),
-				m_pMessageFormat(messageFormat),
+				m_pNameFormat(formatLoggerString(nameFormat)),
+				m_pMessageFormat(formatLoggerString(messageFormat, true)),
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
-				m_pPath(path) {};
+				m_pPath(formatLoggerString(path)) {};
 
 public:
 	int getVerbosity() const;
@@ -59,6 +59,9 @@ public:
 	const char* getTimeFormat() const;
 	const char* getPath() const;
 	void log(int severity, const char* message) const;
+
+private:
+	const char* formatLoggerString(const char* format, bool appendNewline = false) const;
 };
 
 extern NativeHandler<Logger> LoggerHandles;

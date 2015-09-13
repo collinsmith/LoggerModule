@@ -62,6 +62,52 @@ const char* Logger::getPath() const {
 	return m_pPath.chars();
 }
 
+const char* Logger::formatLoggerString(const char* format, bool appendNewline) const {
+	char *fmtString = new char[sizeof format + 1];
+	char *cur = fmtString;
+	for (const char *c = format; *c != '\0'; c++) {
+		*cur++ = *c;
+		if (*c != '%') {
+			continue;
+		}
+
+		switch (*c++) {
+			case '\0':// EOS
+				return fmtString;
+			case 'd': // date
+				*cur++ = 's';
+				break;
+			case 'f': // function
+				*cur++ = 's';
+				break;
+			case 'l': // message
+				*cur++ = 's';
+				break;
+			case 'm': // map
+				*cur++ = 's';
+				break;
+			case 'n': // script name
+				*cur++ = 's';
+				break;
+			case 's': // severity
+				*cur++ = 's';
+				break;
+			case 't': // time
+				*cur++ = 's';
+				break;
+			case '%': // percent
+			default:  // anything else
+				*cur++ = *c;
+		}
+	}
+
+	if (appendNewline) {
+		*cur++ = '\n';
+	}
+
+	return fmtString;
+}
+
 void Logger::log(int severity, const char* message) const {
 	if (severity < getVerbosity()) {
 		return;
@@ -74,13 +120,13 @@ void Logger::log(int severity, const char* message) const {
 	time(&td);
 	tm* curTime = localtime(&td);
 
+	const char *format = formatLoggerString(getMessageFormat());
+
 	char date[16];
 	strftime(date, sizeof(date), getDateFormat(), curTime);
 
 	char time[16];
 	strftime(time, sizeof(time), getTimeFormat(), curTime);
-
-
 
 	FILE *pF = NULL;
 	if (getPath()[0]) {
