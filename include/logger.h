@@ -63,6 +63,21 @@ public:
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
 				m_pPathFormat(formatLoggerString(pathFormat, m_pPathFormatArgs)) {
+		/*MF_PrintSrvConsole("->%s; ", m_pNameFormat);
+		for (int i = 0; i < sizeof(m_pNameFormatArgs)*sizeof(int); i++) {
+			MF_PrintSrvConsole("%d ", m_pNameFormatArgs[i]);
+		}
+		MF_PrintSrvConsole("\n");
+		MF_PrintSrvConsole("->%s; ", m_pMessageFormat);
+		for (int i = 0; i < sizeof(m_pMessageFormatArgs)*sizeof(int); i++) {
+			MF_PrintSrvConsole("%d ", m_pMessageFormatArgs[i]);
+		}
+		MF_PrintSrvConsole("\n");
+		MF_PrintSrvConsole("->%s; ", m_pPathFormat);
+		for (int i = 0; i < sizeof(m_pPathFormatArgs)*sizeof(int); i++) {
+			MF_PrintSrvConsole("%d ", m_pPathFormatArgs[i]);
+		}
+		MF_PrintSrvConsole("\n");*/
 	};
 
 	~Logger() {
@@ -88,7 +103,7 @@ public:
 	void log(int severity, const char* format, ...) const;
 
 private:
-	const char* formatLoggerString(const char* format, int* argVector, bool appendNewline = false) const;
+	const char* formatLoggerString(const char *format, int *&argVector, bool appendNewline = false) const;
 };
 
 extern NativeHandler<Logger> LoggerHandles;
