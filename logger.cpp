@@ -134,7 +134,7 @@ const char* Logger::formatLoggerString(const char *format, int *&argVector, bool
 	return fmtString;
 }
 
-int doFormatting(const char* format, int formatLen, const int* formatArgs, char* buffer, int bufferLen, const char* date, const int dateLen, const char* message, const char* time, const int timeLen, const int severity) {
+int doFormatting(const char* format, int formatLen, const int* formatArgs, char* buffer, int bufferLen, const char* date, const int dateLen, const char* message, const char* time, const int timeLen, const int severity, const char *plugin) {
 	int offset = 0;
 	int size = sizeof formatArgs*sizeof(int);
 	MF_PrintSrvConsole("processing: %d; %d\n", bufferLen, size);
@@ -165,7 +165,7 @@ int doFormatting(const char* format, int formatLen, const int* formatArgs, char*
 				UTIL_Format(buffer + offset, bufferLen - offset, format, STRING(gpGlobals->mapname));
 				break;
 			case LOG_ARG_SCRIPT:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, "script");
+				UTIL_Format(buffer + offset, bufferLen - offset, format, plugin);
 				break;
 			case LOG_ARG_SEVERITY:
 				UTIL_Format(buffer + offset, bufferLen - offset, format, VERBOSITY[toIndex(severity)]);
@@ -194,7 +194,7 @@ int doFormatting(const char* format, int formatLen, const int* formatArgs, char*
 	return offset;
 }
 
-void Logger::log(int severity, const char* msgFormat, ...) const {
+void Logger::log(const char *plugin, int severity, const char* msgFormat, ...) const {
 	if (severity < getVerbosity()) {
 		return;
 	}
@@ -228,8 +228,9 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		message,
 		time,
 		timeLen,
-		severity);
-	//MF_PrintSrvConsole("got [%d]: %s\n", offset, formattedMessage);
+		severity,
+		plugin);
+	//MF_PrintSrvConsole("got %s\n", plugin);
 
 	static char fileName[256];
 	offset = doFormatting(
@@ -243,7 +244,8 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		message,
 		time,
 		timeLen,
-		severity);
+		severity,
+		plugin);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, fileName);
 
 	static char path[256];
@@ -258,7 +260,8 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		message,
 		time,
 		timeLen,
-		severity);
+		severity,
+		plugin);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, path);
 
 	FILE *pF = NULL;
@@ -385,7 +388,7 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(params[2], buffer);
+	logger->log(MF_GetScriptName(MF_FindScriptByAmx(amx)), params[2], buffer);
 	return 1;
 }
 

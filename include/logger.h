@@ -100,7 +100,7 @@ public:
 	const int* getMessageFormatArgs() const;
 	const int* getPathFormatArgs() const;
 
-	void log(int severity, const char* format, ...) const;
+	void log(const char *plugin, int severity, const char* format, ...) const;
 
 private:
 	const char* formatLoggerString(const char *format, int *&argVector, bool appendNewline = false) const;
