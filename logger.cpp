@@ -58,15 +58,27 @@ const char* Logger::getTimeFormat() const {
 	return m_pTimeFormat.chars();
 }
 
-const char* Logger::getPath() const {
-	return m_pPath.chars();
+const char* Logger::getPathFormat() const {
+	return m_pPathFormat.chars();
 }
 
-const char* Logger::formatLoggerString(const char* format, bool appendNewline) const {
+const int* Logger::getNameFormatArgs() const {
+	return m_pNameFormatArgs;
+}
+
+const int* Logger::getMessageFormatArgs() const {
+	return m_pMessageFormatArgs;
+}
+
+const int* Logger::getPathFormatArgs() const {
+	return m_pPathFormatArgs;
+}
+
+const char* Logger::formatLoggerString(const char* format, int* argVector, bool appendNewline) const {
 	char *fmtString = new char[sizeof format + 1];
-	char *cur = fmtString;
+	argVector = new int[16];
 	for (const char *c = format; *c != '\0'; c++) {
-		*cur++ = *c;
+		*fmtString++ = *c;
 		if (*c != '%') {
 			continue;
 		}
@@ -75,87 +87,143 @@ const char* Logger::formatLoggerString(const char* format, bool appendNewline) c
 			case '\0':// EOS
 				return fmtString;
 			case 'd': // date
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_DATE;
+				*fmtString++ = 's';
 				break;
 			case 'f': // function
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_FUNCTION;
+				*fmtString++ = 's';
 				break;
 			case 'l': // message
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_MESSAGE;
+				*fmtString++ = 's';
 				break;
 			case 'm': // map
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_MAP;
+				*fmtString++ = 's';
 				break;
 			case 'n': // script name
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_SCRIPT;
+				*fmtString++ = 's';
 				break;
 			case 's': // severity
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_SEVERITY;
+				*fmtString++ = 's';
 				break;
 			case 't': // time
-				*cur++ = 's';
+				*argVector++ = LOG_ARG_TIME;
+				*fmtString++ = 's';
 				break;
 			case '%': // percent
 			default:  // anything else
-				*cur++ = *c;
+				*fmtString++ = *c;
 		}
 	}
 
 	if (appendNewline) {
-		*cur++ = '\n';
+		*fmtString++ = '\n';
 	}
 
 	return fmtString;
 }
 
-void Logger::log(int severity, const char* message) const {
+int doFormatting(const char* format, const int* formatArgs, char* buffer, const char* date, const char* message, const char* time, const int severity) {
+	int offset = 0;
+	int size = sizeof formatArgs;
+	for (int i = 0; i < size; i++) {
+		switch (formatArgs[i]) {
+			case LOG_ARG_DATE:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, date);
+				break;
+			case LOG_ARG_FUNCTION:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, "function");
+				break;
+			case LOG_ARG_MESSAGE:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, message);
+				break;
+			case LOG_ARG_MAP:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, STRING(gpGlobals->mapname));
+				break;
+			case LOG_ARG_SCRIPT:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, "script");
+				break;
+			case LOG_ARG_SEVERITY:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, VERBOSITY[toIndex(severity)]);
+				break;
+			case LOG_ARG_TIME:
+				offset += UTIL_Format(buffer + offset, sizeof buffer - 1 - offset, format, time);
+				break;
+			case LOG_ARG_NONE:
+				break;
+		}
+	}
+
+	return offset;
+}
+
+void Logger::log(int severity, const char* msgFormat, ...) const {
 	if (severity < getVerbosity()) {
 		return;
 	}
 
-	static char file[256];
-	static char name[256];
+	static char message[4096];
+
+	va_list arglst;
+	va_start(arglst, msgFormat);
+	ke::SafeVsprintf(message, sizeof message - 1, msgFormat, arglst);
+	va_end(arglst);
 
 	time_t td;
 	time(&td);
 	tm* curTime = localtime(&td);
 
-	const char *format = formatLoggerString(getMessageFormat());
-
 	char date[16];
-	strftime(date, sizeof(date), getDateFormat(), curTime);
+	strftime(date, sizeof date - 1, getDateFormat(), curTime);
 
 	char time[16];
-	strftime(time, sizeof(time), getTimeFormat(), curTime);
+	strftime(time, sizeof time - 1, getTimeFormat(), curTime);
+
+	static char fullPath[256];
+	static char path[256];
+	static char fileName[256];
+
+	doFormatting(
+		getNameFormat(),
+		getNameFormatArgs(),
+		fileName,
+		date,
+		message,
+		time,
+		severity);
 
 	FILE *pF = NULL;
-	if (getPath()[0]) {
-		UTIL_Format(name, 255, "%s/%s/%s_%s.log",
-			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
-			getPath(),
+	if (getPathFormat()[0]) {
+		UTIL_Format(path, sizeof path - 1, "%s/%s_%s.log",
+			getPathFormat(),
 			getNameFormat(),
 			date);
 	} else {
-		UTIL_Format(name, 255, "%s/%s_%s.log",
-			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
+		UTIL_Format(path, sizeof path - 1, "%s_%s.log",
 			getNameFormat(),
 			date);
 	}
 
-	MF_BuildPathnameR(file, 255, "%s", name);
-	pF = fopen(file, "a+");
+	MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s",
+			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
+			path);
+	pF = fopen(fullPath, "a+");
 
 	if (pF) {
 		if (!m_LoggedMap) {
-			fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[2], time);
-			fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[2], time, STRING(gpGlobals->mapname), name);
+			fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time);
+			fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time, STRING(gpGlobals->mapname), path);
 			m_LoggedMap = true;
 		}
 
 		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, message);
 		fclose(pF);
 	} else {
-		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", file);
+		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", fullPath);
 		return;
 	}
 

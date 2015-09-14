@@ -20,7 +20,7 @@ public:
 public:
 	void clear() {
 		for (size_t i = 0; i < m_handles.length(); i++) {
-			if (m_handles[i] != nullptr) {
+			if (m_handles[i]) {
 				delete m_handles[i];
 			}
 		}
@@ -29,7 +29,7 @@ public:
 	template <typename... Targs>
 	int create(Targs... Fargs) {
 		for (size_t i = 0; i < m_handles.length(); i++) {
-			if (m_handles[i] != nullptr) {
+			if (m_handles[i]) {
 				m_handles[i] = new T(Fargs...);
 				return static_cast<int>(i) + 1;
 			}
@@ -54,7 +54,7 @@ public:
 			return false;
 		}
 
-		if (m_handles[handle] == nullptr) {
+		if (!m_handles[handle]) {
 			return false;
 		}
 
