@@ -172,7 +172,7 @@ int doFormatting(const char* format, int formatLen, const int* formatArgs, char*
 				break;
 			case LOG_ARG_TIME:
 				MF_PrintSrvConsole(">time\n");
-				snprintf(buffer+offset, timeLen, format, time);
+				snprintf(buffer + offset, timeLen, format, time);
 				offset += timeLen;
 
 				MF_PrintSrvConsole(">offs = %d\n", offset);
