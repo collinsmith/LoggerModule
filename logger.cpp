@@ -166,13 +166,6 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		return;
 	}
 
-	static char message[4096];
-
-	va_list arglst;
-	va_start(arglst, msgFormat);
-	ke::SafeVsprintf(message, sizeof message - 1, msgFormat, arglst);
-	va_end(arglst);
-
 	time_t td;
 	time(&td);
 	tm* curTime = localtime(&td);
@@ -183,10 +176,24 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 	char time[16];
 	strftime(time, sizeof time - 1, getTimeFormat(), curTime);
 
-	static char fullPath[256];
-	static char path[256];
-	static char fileName[256];
+	static char message[4096];
+	
+	va_list arglst;
+	va_start(arglst, msgFormat);
+	ke::SafeVsprintf(message, sizeof message - 1, msgFormat, arglst);
+	va_end(arglst);
 
+	static char formattedMessage[4096];
+	doFormatting(
+		getMessageFormat(),
+		getMessageFormatArgs(),
+		formattedMessage,
+		date,
+		message,
+		time,
+		severity);
+
+	static char fileName[256];
 	doFormatting(
 		getNameFormat(),
 		getNameFormatArgs(),
@@ -196,18 +203,29 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		time,
 		severity);
 
+	static char path[256];
+	doFormatting(
+		getPathFormat(),
+		getPathFormatArgs(),
+		path,
+		date,
+		message,
+		time,
+		severity);
+
 	FILE *pF = NULL;
 	if (getPathFormat()[0]) {
-		UTIL_Format(path, sizeof path - 1, "%s/%s_%s.log",
-			getPathFormat(),
-			getNameFormat(),
+		UTIL_Format(path, sizeof path - 1, "%s/%s.log",
+			path,
+			fileName,
 			date);
 	} else {
-		UTIL_Format(path, sizeof path - 1, "%s_%s.log",
-			getNameFormat(),
+		UTIL_Format(path, sizeof path - 1, "%s.log",
+			fileName,
 			date);
 	}
 
+	static char fullPath[256];
 	MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s",
 			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
 			path);
@@ -215,19 +233,19 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 
 	if (pF) {
 		if (!m_LoggedMap) {
-			fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time);
-			fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time, STRING(gpGlobals->mapname), path);
+			//fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time);
+			//fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time, STRING(gpGlobals->mapname), fileName);
 			m_LoggedMap = true;
 		}
 
-		fprintf(pF, "[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, message);
+		fprintf(pF, formattedMessage);
 		fclose(pF);
 	} else {
 		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", fullPath);
 		return;
 	}
 
-	MF_PrintSrvConsole("[%-5s] [%s] %s\n", VERBOSITY[toIndex(severity)], time, message);
+	MF_PrintSrvConsole(formattedMessage);
 }
 
 // native Logger:LoggerCreate(
