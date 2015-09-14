@@ -134,7 +134,7 @@ const char* Logger::formatLoggerString(const char *format, int *&argVector, bool
 	return fmtString;
 }
 
-int doFormatting(const char* format, int formatLen, const int* formatArgs, char* buffer, int bufferLen, const char* date, const char* message, const char* time, const int severity) {
+int doFormatting(const char* format, int formatLen, const int* formatArgs, char* buffer, int bufferLen, const char* date, const int dateLen, const char* message, const char* time, const int timeLen, const int severity) {
 	int offset = 0;
 	int size = sizeof formatArgs*sizeof(int);
 	MF_PrintSrvConsole("processing: %d; %d\n", bufferLen, size);
@@ -149,7 +149,11 @@ int doFormatting(const char* format, int formatLen, const int* formatArgs, char*
 		MF_PrintSrvConsole("%d; %s [%d]\n", formatArgs[i], buffer[0] ? buffer : "<null>", offset);
 		switch (formatArgs[i]) {
 			case LOG_ARG_DATE:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, date);
+				MF_PrintSrvConsole(">date\n");
+				snprintf(buffer + offset, dateLen, format, date);
+				offset += dateLen;
+
+				MF_PrintSrvConsole(">offs = %d\n", offset);
 				break;
 			case LOG_ARG_FUNCTION:
 				UTIL_Format(buffer + offset, bufferLen - offset, format, "function");
@@ -167,7 +171,11 @@ int doFormatting(const char* format, int formatLen, const int* formatArgs, char*
 				UTIL_Format(buffer + offset, bufferLen - offset, format, VERBOSITY[toIndex(severity)]);
 				break;
 			case LOG_ARG_TIME:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, time);
+				MF_PrintSrvConsole(">time\n");
+				snprintf(buffer+offset, timeLen, format, time);
+				offset += timeLen;
+
+				MF_PrintSrvConsole(">offs = %d\n", offset);
 				break;
 			case LOG_ARG_NONE:
 				if (i == 0) {
@@ -196,10 +204,10 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 	tm* curTime = localtime(&td);
 
 	char date[16];
-	strftime(date, sizeof date - 1, getDateFormat(), curTime);
+	int dateLen = strftime(date, sizeof date - 1, getDateFormat(), curTime);
 
 	char time[16];
-	strftime(time, sizeof time - 1, getTimeFormat(), curTime);
+	int timeLen = strftime(time, sizeof time - 1, getTimeFormat(), curTime);
 
 	static char message[4096];
 	
@@ -216,8 +224,10 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		formattedMessage,
 		sizeof formattedMessage - 1,
 		date,
+		dateLen,
 		message,
 		time,
+		timeLen,
 		severity);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, formattedMessage);
 
@@ -229,8 +239,10 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		fileName,
 		sizeof fileName - 1,
 		date,
+		dateLen,
 		message,
 		time,
+		timeLen,
 		severity);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, fileName);
 
@@ -242,8 +254,10 @@ void Logger::log(int severity, const char* msgFormat, ...) const {
 		path,
 		sizeof path - 1,
 		date,
+		dateLen,
 		message,
 		time,
+		timeLen,
 		severity);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, path);
 
