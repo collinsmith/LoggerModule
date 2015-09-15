@@ -45,10 +45,6 @@ private:
 	const ke::AString m_pTimeFormat;
 	const ke::AString m_pPathFormat;
 
-	int* m_pNameFormatArgs;
-	int* m_pMessageFormatArgs;
-	int* m_pPathFormatArgs;
-
 	int m_Verbosity;
 
 public:
@@ -59,33 +55,11 @@ public:
 				const char* timeFormat,
 				const char* pathFormat)
 			: m_Verbosity(verbosity),
-				m_pNameFormat(formatLoggerString(nameFormat, m_pNameFormatArgs)),
-				m_pMessageFormat(formatLoggerString(messageFormat, m_pMessageFormatArgs, true)),
+				m_pNameFormat(nameFormat),
+				m_pMessageFormat(messageFormat),
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
-				m_pPathFormat(formatLoggerString(pathFormat, m_pPathFormatArgs)) {
-		/*MF_PrintSrvConsole("->%s; ", m_pNameFormat);
-		for (int i = 0; i < sizeof(m_pNameFormatArgs)*sizeof(int); i++) {
-			MF_PrintSrvConsole("%d ", m_pNameFormatArgs[i]);
-		}
-		MF_PrintSrvConsole("\n");
-		MF_PrintSrvConsole("->%s; ", m_pMessageFormat);
-		for (int i = 0; i < sizeof(m_pMessageFormatArgs)*sizeof(int); i++) {
-			MF_PrintSrvConsole("%d ", m_pMessageFormatArgs[i]);
-		}
-		MF_PrintSrvConsole("\n");
-		MF_PrintSrvConsole("->%s; ", m_pPathFormat);
-		for (int i = 0; i < sizeof(m_pPathFormatArgs)*sizeof(int); i++) {
-			MF_PrintSrvConsole("%d ", m_pPathFormatArgs[i]);
-		}
-		MF_PrintSrvConsole("\n");*/
-	};
-
-	~Logger() {
-		delete m_pNameFormatArgs;
-		delete m_pMessageFormatArgs;
-		delete m_pPathFormatArgs;
-	}
+				m_pPathFormat(pathFormat) {};
 
 public:
 	int getVerbosity() const;
@@ -97,14 +71,7 @@ public:
 	const char* getTimeFormat() const;
 	const char* getPathFormat() const;
 
-	const int* getNameFormatArgs() const;
-	const int* getMessageFormatArgs() const;
-	const int* getPathFormatArgs() const;
-
 	void log(CPluginMngr::CPlugin *plugin, int severity, const char* format, ...) const;
-
-private:
-	const char* formatLoggerString(const char *format, int *&argVector, bool appendNewline = false) const;
 };
 
 extern NativeHandler<Logger> LoggerHandles;

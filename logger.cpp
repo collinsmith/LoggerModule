@@ -3,6 +3,7 @@
 #include <am-string.h>
 #include <logger.h>
 
+//#define SHOW_LOG_STRING_BUILDER
 #define INVALID_LOGGER  0
 #define ALL_LOGGERS    -1
 
@@ -69,80 +70,15 @@ const char* Logger::getPathFormat() const {
 	return m_pPathFormat.chars();
 }
 
-const int* Logger::getNameFormatArgs() const {
-	return m_pNameFormatArgs;
-}
-
-const int* Logger::getMessageFormatArgs() const {
-	return m_pMessageFormatArgs;
-}
-
-const int* Logger::getPathFormatArgs() const {
-	return m_pPathFormatArgs;
-}
-
-const char* Logger::formatLoggerString(const char *format, int *&argVector, bool appendNewline) const {
-	char *fmtString = new char[sizeof format + 1];
-	char *temp = fmtString;
-	int *tempArray = new int[16];
-	int *tempInt = tempArray;
-	for (const char *c = format; *c != '\0'; c++) {
-		*(temp++) = *c;
-		if (*c != '%') {
-			continue;
-		}
-
-		c++;
-		switch (*c) {
-			case '\0':// EOS
-				return temp;
-			case 'd': // date
-				*(tempInt++) = LOG_ARG_DATE;
-				*(temp++) = 's';
-				break;
-			case 'f': // function
-				*(tempInt++) = LOG_ARG_FUNCTION;
-				*(temp++) = 's';
-				break;
-			case 'l': // message
-				*(tempInt++) = LOG_ARG_MESSAGE;
-				*(temp++) = 's';
-				break;
-			case 'm': // map
-				*(tempInt++) = LOG_ARG_MAP;
-				*(temp++) = 's';
-				break;
-			case 'n': // script name
-				*(tempInt++) = LOG_ARG_SCRIPT;
-				*(temp++) = 's';
-				break;
-			case 's': // severity
-				*(tempInt++) = LOG_ARG_SEVERITY;
-				*(temp++) = 's';
-				break;
-			case 't': // time
-				*(tempInt++) = LOG_ARG_TIME;
-				*(temp++) = 's';
-				break;
-			case '%': // percent
-			default:  // anything else
-				*(temp++) = *c;
-		}
+char* strncpyc(char* destination, const char source, int len) {
+	if (len) {
+		*destination = source;
 	}
 
-	if (appendNewline) {
-		*(temp++) = '\n';
-	}
-
-	*tempInt = 0;
-	*temp = '\0';
-
-	argVector = tempArray;
-	return fmtString;
+	return destination;
 }
 
-int doFormatting(const char *format, int formatLen,
-			const int *formatArgs,
+int formatLoggerString(const char *format, int formatLen,
 			char *buffer, int bufferLen,
 			const char *date, const int dateLen,
 			const char *message, const int messageLen,
@@ -151,96 +87,64 @@ int doFormatting(const char *format, int formatLen,
 			const char *plugin, const int pluginLen,
 			const char *mapname, const int mapnameLen) {
 	
+#ifdef SHOW_LOG_STRING_BUILDER
+	MF_PrintSrvConsole("FORMAT: %s\n", format);
+#endif
+
 	int offset = 0;
-	const char *c;
-	for (c = format; *c != '\0'; c++) {
+	for (const char *c = format; *c != '\0'; c++) {
+#ifdef SHOW_LOG_STRING_BUILDER
+		MF_PrintSrvConsole("->%s\n", buffer);
+#endif
 		if (*c != '%') {
-			*(buffer + offset) = *c;
+			strncpyc(buffer + offset, *c, bufferLen - offset);
 			offset++;
 			continue;
 		}
 
 		c++;
 		switch (*c) {
-			case '\0':// EOS
-				goto breakFor;
-			case 's': // severity
-				c++;
-				goto breakFor;
-			case '%': // percent
-				*(buffer + offset) = '%';
-				offset++;
-				break;
-			default:  // anything else
-				*(buffer + offset) = *c;
-				offset++;
-		}
-	}
-
-breakFor:
-	int size = sizeof formatArgs*sizeof(int);
-	for (int i = 0; i < size; i++) {
-		switch (formatArgs[i]) {
-			case LOG_ARG_DATE:
-				strcpy(buffer + offset, date);
+			case '\0': // EOS
+				goto ReturnStmt;
+			case 'd':  // date
+				strncpy(buffer + offset, date, bufferLen - offset);
 				offset += dateLen;
 				break;
-			case LOG_ARG_FUNCTION:
-				strcpy(buffer + offset, "function");
+			case 'f':  // function
+				strncpy(buffer + offset, "function", bufferLen - offset);
 				offset += 8;
 				break;
-			case LOG_ARG_MESSAGE:
-				strcpy(buffer + offset, message);
+			case 'l':  // message
+				strncpy(buffer + offset, message, bufferLen - offset);
 				offset += messageLen;
 				break;
-			case LOG_ARG_MAP:
-				strcpy(buffer + offset, mapname);
+			case 'm':  // map
+				strncpy(buffer + offset, mapname, bufferLen - offset);
 				offset += mapnameLen;
 				break;
-			case LOG_ARG_SCRIPT:
-				strcpy(buffer + offset, plugin);
+			case 'n':  // script name
+				strncpy(buffer + offset, plugin, bufferLen - offset);
 				offset += pluginLen;
 				break;
-			case LOG_ARG_SEVERITY:
-				strcpy(buffer + offset, severity);
+			case 's':  // severity
+				strncpy(buffer + offset, severity, bufferLen - offset);
 				offset += severityLen;
 				break;
-			case LOG_ARG_TIME:
-				strcpy(buffer + offset, time);
+			case 't':  // time
+				strncpy(buffer + offset, time, bufferLen - offset);
 				offset += timeLen;
 				break;
-			case LOG_ARG_NONE:
-				strcpy(buffer + offset, c);
-				return offset + (c - format);
+			case '%':  // percent
+				strncpyc(buffer + offset, '%', bufferLen - offset);
+				offset += 1;
+				break;
+			default:   // error, skip percent and recover by backing up before incorrect symbol
+				c--;
+				break;
 		}
-
-		for (; *c != '\0'; c++) {
-			if (*c != '%') {
-				*(buffer + offset) = *c;
-				offset++;
-				continue;
-			}
-
-			c++;
-			switch (*c) {
-				case '\0':// EOS
-					goto breakLoop;
-				case 's': // severity
-					c++;
-					goto breakLoop;
-				case '%': // percent
-					*(buffer + offset) = '%';
-					offset++;
-					break;
-				default:  // anything else
-					*(buffer + offset) = *c;
-					offset++;
-			}
-		}
-
-breakLoop:;
 	}
 
+ReturnStmt:
 	return offset;
 }
 
@@ -271,21 +175,20 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 	int pluginLen = strlen(plugin->getName());
 	int mapnameLen = strlen(STRING(gpGlobals->mapname));
 	static char formattedMessage[4096];
-	int offset = doFormatting(
+	int offset = formatLoggerString(
 		m_pMessageFormat.chars(), m_pMessageFormat.length(),
-		getMessageFormatArgs(),
-		formattedMessage, sizeof formattedMessage - 1,
+		formattedMessage, sizeof formattedMessage - 2,
 		date, dateLen,
 		message, messageLen,
 		time, timeLen,
 		VERBOSITY[sevId], VERBOSITY_LEN[sevId],
 		plugin->getName(), pluginLen,
 		STRING(gpGlobals->mapname), mapnameLen);
+	*(formattedMessage + offset) = '\n';
 
 	static char fileName[256];
-	offset = doFormatting(
+	offset = formatLoggerString(
 		m_pNameFormat.chars(), m_pNameFormat.length(),
-		getNameFormatArgs(),
 		fileName, sizeof fileName - 1,
 		date, dateLen,
 		message, messageLen,
@@ -296,9 +199,8 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, fileName);
 
 	static char path[256];
-	offset = doFormatting(
+	offset = formatLoggerString(
 		m_pPathFormat.chars(), m_pPathFormat.length(),
-		getPathFormatArgs(),
 		path, sizeof path - 1,
 		date, dateLen,
 		message, messageLen,
