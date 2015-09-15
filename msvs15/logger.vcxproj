@@ -220,6 +220,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\CPlugin.h" />
     <ClInclude Include="..\include\logger.h" />
     <ClInclude Include="..\include\native_handler.h" />
     <ClInclude Include="..\public\sdk\amxxmodule.h" />

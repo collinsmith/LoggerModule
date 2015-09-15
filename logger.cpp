@@ -12,9 +12,16 @@ bool m_LoggedMap = false;
 
 const char* VERBOSITY[] = {
 	"ERROR",
-	"WARN",
-	"INFO",
+	"WARN ",
+	"INFO ",
 	"DEBUG"
+};
+
+const int VERBOSITY_LEN[] = {
+	5,
+	5,
+	5,
+	5
 };
 
 int toIndex(int severity) {
@@ -134,67 +141,110 @@ const char* Logger::formatLoggerString(const char *format, int *&argVector, bool
 	return fmtString;
 }
 
-int doFormatting(const char* format, int formatLen, const int* formatArgs, char* buffer, int bufferLen, const char* date, const int dateLen, const char* message, const char* time, const int timeLen, const int severity, const char *plugin) {
+int doFormatting(const char *format, int formatLen,
+			const int *formatArgs,
+			char *buffer, int bufferLen,
+			const char *date, const int dateLen,
+			const char *message, const int messageLen,
+			const char *time, const int timeLen,
+			const char *severity, const int severityLen,
+			const char *plugin, const int pluginLen,
+			const char *mapname, const int mapnameLen) {
+	
 	int offset = 0;
-	int size = sizeof formatArgs*sizeof(int);
-	MF_PrintSrvConsole("processing: %d; %d\n", bufferLen, size);
-	MF_PrintSrvConsole("> %s\n", format);
-	MF_PrintSrvConsole("> ");
-	for (int i = 0; i < sizeof(formatArgs)*sizeof(int); i++) {
-		MF_PrintSrvConsole("%d ", formatArgs[i]);
-	}
-	MF_PrintSrvConsole("\n");
-
-	for (int i = 0; i < size; i++) {
-		MF_PrintSrvConsole("%d; %s [%d]\n", formatArgs[i], buffer[0] ? buffer : "<null>", offset);
-		switch (formatArgs[i]) {
-			case LOG_ARG_DATE:
-				MF_PrintSrvConsole(">date\n");
-				snprintf(buffer + offset, dateLen, format, date);
-				offset += dateLen;
-
-				MF_PrintSrvConsole(">offs = %d\n", offset);
-				break;
-			case LOG_ARG_FUNCTION:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, "function");
-				break;
-			case LOG_ARG_MESSAGE:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, message);
-				break;
-			case LOG_ARG_MAP:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, STRING(gpGlobals->mapname));
-				break;
-			case LOG_ARG_SCRIPT:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, plugin);
-				break;
-			case LOG_ARG_SEVERITY:
-				UTIL_Format(buffer + offset, bufferLen - offset, format, VERBOSITY[toIndex(severity)]);
-				break;
-			case LOG_ARG_TIME:
-				MF_PrintSrvConsole(">time\n");
-				snprintf(buffer + offset, timeLen, format, time);
-				offset += timeLen;
-
-				MF_PrintSrvConsole(">offs = %d\n", offset);
-				break;
-			case LOG_ARG_NONE:
-				if (i == 0) {
-					strncpy(buffer, format, formatLen);
-					MF_PrintSrvConsole("\n special - %s\n", buffer);
-					return formatLen;
-				}
-
-				MF_PrintSrvConsole("\n");
-				return offset;
+	const char *c;
+	for (c = format; *c != '\0'; c++) {
+		if (*c != '%') {
+			*(buffer + offset) = *c;
+			offset++;
+			continue;
 		}
 
-		MF_PrintSrvConsole(">%s [%d]\n", buffer, offset);
+		c++;
+		switch (*c) {
+			case '\0':// EOS
+				goto breakFor;
+			case 's': // severity
+				c++;
+				goto breakFor;
+			case '%': // percent
+				*(buffer + offset) = '%';
+				offset++;
+				break;
+			default:  // anything else
+				*(buffer + offset) = *c;
+				offset++;
+		}
+	}
+
+breakFor:
+	int size = sizeof formatArgs*sizeof(int);
+	for (int i = 0; i < size; i++) {
+		switch (formatArgs[i]) {
+			case LOG_ARG_DATE:
+				strcpy(buffer + offset, date);
+				offset += dateLen;
+				break;
+			case LOG_ARG_FUNCTION:
+				strcpy(buffer + offset, "function");
+				offset += 8;
+				break;
+			case LOG_ARG_MESSAGE:
+				strcpy(buffer + offset, message);
+				offset += messageLen;
+				break;
+			case LOG_ARG_MAP:
+				strcpy(buffer + offset, mapname);
+				offset += mapnameLen;
+				break;
+			case LOG_ARG_SCRIPT:
+				strcpy(buffer + offset, plugin);
+				offset += pluginLen;
+				break;
+			case LOG_ARG_SEVERITY:
+				strcpy(buffer + offset, severity);
+				offset += severityLen;
+				break;
+			case LOG_ARG_TIME:
+				strcpy(buffer + offset, time);
+				offset += timeLen;
+				break;
+			case LOG_ARG_NONE:
+				strcpy(buffer + offset, c);
+				return offset + (c - format);
+		}
+
+		for (; *c != '\0'; c++) {
+			if (*c != '%') {
+				*(buffer + offset) = *c;
+				offset++;
+				continue;
+			}
+
+			c++;
+			switch (*c) {
+				case '\0':// EOS
+					goto breakLoop;
+				case 's': // severity
+					c++;
+					goto breakLoop;
+				case '%': // percent
+					*(buffer + offset) = '%';
+					offset++;
+					break;
+				default:  // anything else
+					*(buffer + offset) = *c;
+					offset++;
+			}
+		}
+
+breakLoop:;
 	}
 
 	return offset;
 }
 
-void Logger::log(const char *plugin, int severity, const char* msgFormat, ...) const {
+void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgFormat, ...) const {
 	if (severity < getVerbosity()) {
 		return;
 	}
@@ -213,55 +263,49 @@ void Logger::log(const char *plugin, int severity, const char* msgFormat, ...) c
 	
 	va_list arglst;
 	va_start(arglst, msgFormat);
-	ke::SafeVsprintf(message, sizeof message - 1, msgFormat, arglst);
+	int messageLen = ke::SafeVsprintf(message, sizeof message - 1, msgFormat, arglst);
 	va_end(arglst);
 
+	//MF_PrintSrvConsole("got %s\n", plugin+31);
+	int sevId = toIndex(severity);
+	int pluginLen = strlen(plugin->getName());
+	int mapnameLen = strlen(STRING(gpGlobals->mapname));
 	static char formattedMessage[4096];
 	int offset = doFormatting(
-		m_pMessageFormat.chars(),
-		m_pMessageFormat.length(),
+		m_pMessageFormat.chars(), m_pMessageFormat.length(),
 		getMessageFormatArgs(),
-		formattedMessage,
-		sizeof formattedMessage - 1,
-		date,
-		dateLen,
-		message,
-		time,
-		timeLen,
-		severity,
-		plugin);
-	//MF_PrintSrvConsole("got %s\n", plugin);
+		formattedMessage, sizeof formattedMessage - 1,
+		date, dateLen,
+		message, messageLen,
+		time, timeLen,
+		VERBOSITY[sevId], VERBOSITY_LEN[sevId],
+		plugin->getName(), pluginLen,
+		STRING(gpGlobals->mapname), mapnameLen);
 
 	static char fileName[256];
 	offset = doFormatting(
-		m_pNameFormat.chars(),
-		m_pNameFormat.length(),
+		m_pNameFormat.chars(), m_pNameFormat.length(),
 		getNameFormatArgs(),
-		fileName,
-		sizeof fileName - 1,
-		date,
-		dateLen,
-		message,
-		time,
-		timeLen,
-		severity,
-		plugin);
+		fileName, sizeof fileName - 1,
+		date, dateLen,
+		message, messageLen,
+		time, timeLen,
+		VERBOSITY[sevId], VERBOSITY_LEN[sevId],
+		plugin->getName(), pluginLen,
+		STRING(gpGlobals->mapname), mapnameLen);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, fileName);
 
 	static char path[256];
 	offset = doFormatting(
-		m_pPathFormat.chars(),
-		m_pPathFormat.length(),
+		m_pPathFormat.chars(), m_pPathFormat.length(),
 		getPathFormatArgs(),
-		path,
-		sizeof path - 1,
-		date,
-		dateLen,
-		message,
-		time,
-		timeLen,
-		severity,
-		plugin);
+		path, sizeof path - 1,
+		date, dateLen,
+		message, messageLen,
+		time, timeLen,
+		VERBOSITY[sevId], VERBOSITY_LEN[sevId],
+		plugin->getName(), pluginLen,
+		STRING(gpGlobals->mapname), mapnameLen);
 	//MF_PrintSrvConsole("got [%d]: %s\n", offset, path);
 
 	FILE *pF = NULL;
@@ -386,9 +430,10 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 		return 0;
 	}
 
+	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(MF_GetScriptName(MF_FindScriptByAmx(amx)), params[2], buffer);
+	logger->log(p, params[2], buffer); // MF_GetScriptName(MF_FindScriptByAmx(amx))
 	return 1;
 }
 

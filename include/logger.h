@@ -3,6 +3,7 @@
 
 #include <am-vector.h>
 #include "native_handler.h"
+#include "CPlugin.h"
 
 #define LOG_SEVERITY_HIGHEST LOG_SEVERITY_ERROR
 #define LOG_SEVERITY_LOWEST  LOG_SEVERITY_DEBUG
@@ -100,7 +101,7 @@ public:
 	const int* getMessageFormatArgs() const;
 	const int* getPathFormatArgs() const;
 
-	void log(const char *plugin, int severity, const char* format, ...) const;
+	void log(CPluginMngr::CPlugin *plugin, int severity, const char* format, ...) const;
 
 private:
 	const char* formatLoggerString(const char *format, int *&argVector, bool appendNewline = false) const;
