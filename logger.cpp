@@ -672,7 +672,3 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 void OnAmxxAttach() {
 	MF_AddNatives(amxmodx_Natives);
 }
-
-void OnAmxxDetach() {
-	//...
-}
