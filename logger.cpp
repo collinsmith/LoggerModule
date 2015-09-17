@@ -225,10 +225,6 @@ int parseLoggerString(const char *format,
 	bool lJustify;
 	int len, width, precision;
 	const char *c = format;
-	goto skip;
-nextIteration:
-	c++;
-skip:
 	for (; *c != '\0'; c++) {
 #ifdef SHOW_LOG_STRING_BUILDER
 		MF_PrintSrvConsole("->%s|%s\n", buffer, c);
@@ -261,7 +257,6 @@ skip:
 		}
 	}
 
-ReturnStmt:
 #ifdef SHOW_LOG_STRING_BUILDER
 	MF_PrintSrvConsole("->%s|%s\n", buffer, c);
 #endif
@@ -363,6 +358,29 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 	MF_PrintSrvConsole(formattedMessage);
 }
 
+bool isValidLoggerFormat(const char *str, int &percentLoc, int &errorLoc) {
+	percentLoc = -1;
+	errorLoc = -1;
+
+	char specifier;
+	bool lJustify;
+	int width, precision;
+	const char *c = str;
+	for (; *c != '\0'; c++) {
+		if (*c != '%') {
+			continue;
+		}
+
+		percentLoc = c - str;
+		if (!parseFormat(c, specifier, lJustify, width, precision)) {
+			errorLoc = c-str;
+			return false;
+		}
+	}
+
+	return true;
+}
+
 // native Logger:LoggerCreate(
 //		verbosity = DEFAULT_LOGGER_VERBOSITY,
 //		const nameFormat[] = DEFAULT_LOGGER_NAME_FORMAT,
@@ -371,13 +389,37 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 //		const timeFormat[] = DEFAULT_LOGGER_TIME_FORMAT,
 //		const path[] = DEFAULT_LOGGER_PATH);
 static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
-	int len;
+	int len, percentLoc, errorLoc;
 	int verbosity = params[1];
 	char* nameFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	if (!isValidLoggerFormat(nameFormat, percentLoc, errorLoc)) {
+		char *error = new char[errorLoc - percentLoc + 1];
+		strncpy(error, nameFormat + percentLoc, errorLoc - percentLoc + 1);
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", nameFormat, percentLoc + 1, error);
+		delete[] error;
+		return INVALID_LOGGER;
+	}
+
 	char* msgFormat = MF_GetAmxString(amx, params[3], 1, &len);
+	if (!isValidLoggerFormat(msgFormat, percentLoc, errorLoc)) {
+		char *error = new char[errorLoc - percentLoc + 1];
+		strncpy(error, msgFormat + percentLoc, errorLoc - percentLoc + 1);
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", msgFormat, percentLoc + 1, error);
+		delete[] error;
+		return INVALID_LOGGER;
+	}
+
 	char* dateFormat = MF_GetAmxString(amx, params[4], 2, &len);
 	char* timeFormat = MF_GetAmxString(amx, params[5], 3, &len);
 	char* path = MF_GetAmxString(amx, params[6], 4, &len);
+	if (!isValidLoggerFormat(path, percentLoc, errorLoc)) {
+		char *error = new char[errorLoc - percentLoc + 1];
+		strncpy(error, path + percentLoc, errorLoc - percentLoc + 1);
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", path, percentLoc + 1, error);
+		delete[] error;
+		return INVALID_LOGGER;
+	}
+
 	return static_cast<cell>(LoggerHandles.create(
 			verbosity,
 			nameFormat,
