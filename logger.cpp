@@ -99,14 +99,14 @@ void shift(char* str, int len, int right) {
 	}
 }
 
-int formatLoggerString(const char *format, int formatLen,
+int formatLoggerString(const char *format,
 			char *buffer, int bufferLen,
-			const char *date, const int dateLen,
-			const char *message, const int messageLen,
-			const char *time, const int timeLen,
-			const char *severity, const int severityLen,
-			const char *plugin, const int pluginLen,
-			const char *mapname, const int mapnameLen) {
+			const char *date,
+			const char *message,
+			const char *time,
+			const char *severity,
+			const char *plugin,
+			const char *mapname) {
 	
 #ifdef SHOW_LOG_STRING_BUILDER
 	MF_PrintSrvConsole("FORMAT: %s\n", format);
@@ -494,44 +494,42 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 	va_end(arglst);
 
 	//MF_PrintSrvConsole("got %s\n", plugin+31);
-	int sevId = toIndex(severity);
-	int verbosityLen = sizeof VERBOSITY[sevId] - 1;
-	int pluginLen = strlen(plugin->getName());
-	int mapnameLen = strlen(STRING(gpGlobals->mapname));
+	const char* severityStr = VERBOSITY[toIndex(severity)];
+
 	static char formattedMessage[4096];
 	int offset = formatLoggerString(
-		m_pMessageFormat.chars(), m_pMessageFormat.length(),
+		getMessageFormat(),
 		formattedMessage, sizeof formattedMessage - 2,
-		date, dateLen,
-		message, messageLen,
-		time, timeLen,
-		VERBOSITY[sevId], verbosityLen,
-		plugin->getName(), pluginLen,
-		STRING(gpGlobals->mapname), mapnameLen);
+		date,
+		message,
+		time,
+		severityStr,
+		plugin->getName(),
+		STRING(gpGlobals->mapname));
 	*(formattedMessage + offset) = '\n';
 	*(formattedMessage + offset + 1) = '\0';
 
 	static char fileName[256];
 	offset = formatLoggerString(
-		m_pNameFormat.chars(), m_pNameFormat.length(),
+		getNameFormat(),
 		fileName, sizeof fileName - 1,
-		date, dateLen,
-		message, messageLen,
-		time, timeLen,
-		VERBOSITY[sevId], verbosityLen,
-		plugin->getName(), pluginLen,
-		STRING(gpGlobals->mapname), mapnameLen);
+		date,
+		message,
+		time,
+		severityStr,
+		plugin->getName(),
+		STRING(gpGlobals->mapname));
 
 	static char path[256];
 	offset = formatLoggerString(
-		m_pPathFormat.chars(), m_pPathFormat.length(),
+		getPathFormat(),
 		path, sizeof path - 1,
-		date, dateLen,
-		message, messageLen,
-		time, timeLen,
-		VERBOSITY[sevId], verbosityLen,
-		plugin->getName(), pluginLen,
-		STRING(gpGlobals->mapname), mapnameLen);
+		date,
+		message,
+		time,
+		severityStr,
+		plugin->getName(),
+		STRING(gpGlobals->mapname));
 
 	FILE *pF = NULL;
 	if (getPathFormat()[0]) {
