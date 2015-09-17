@@ -3,6 +3,7 @@
 #include <am-string.h>
 #include <logger.h>
 
+//#define SHOW_PARSER_DEBUGGING
 //#define SHOW_LOG_STRING_BUILDER
 #define INVALID_LOGGER  0
 #define ALL_LOGGERS    -1
@@ -99,7 +100,114 @@ void shift(char* str, int len, int right) {
 	}
 }
 
-int formatLoggerString(const char *format,
+bool parseFormat(const char *&c, char &specifier, bool &lJustify, int &width, int &precision) {
+	specifier = ' ';
+	lJustify = false;
+	width = -1;
+	precision = -1;
+	if (*c != '%') {
+		return false;
+	}
+
+	int temp;
+#ifdef SHOW_PARSER_DEBUGGING
+	MF_PrintSrvConsole("c=%c\n", *c);
+#endif
+	c++;
+	switch (*c) {
+		case '\0':
+			return false;
+		case '-':
+#ifdef SHOW_PARSER_DEBUGGING
+			MF_PrintSrvConsole("- c=%c\n", *c);
+#endif
+			lJustify = true;
+			c++;
+			if (*c == '\0') {
+				return false;
+			}
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+#ifdef SHOW_PARSER_DEBUGGING
+			MF_PrintSrvConsole("# c=%c", *c);
+#endif
+			if (0 <= (temp = *c - '0') && temp <= 9) {
+				width = temp;
+				c++;
+				while (0 <= (temp = *c - '0') && temp <= 9) {
+#ifdef SHOW_PARSER_DEBUGGING
+					MF_PrintSrvConsole("\n# c=%c", *c);
+#endif
+					width *= 10;
+					width += temp;
+					c++;
+				}
+			} else {
+#ifdef SHOW_PARSER_DEBUGGING
+				MF_PrintSrvConsole("; next");
+#endif
+			}
+
+#ifdef SHOW_PARSER_DEBUGGING
+			MF_PrintSrvConsole(";\n");
+#endif
+
+			if (*c == '\0') {
+				return false;
+			}
+		case '.':
+#ifdef SHOW_PARSER_DEBUGGING
+			MF_PrintSrvConsole(". c=%c", *c);
+#endif
+			if (*c == '.') {
+				c++;
+				if (0 <= (temp = *c - '0') && temp <= 9) {
+#ifdef SHOW_PARSER_DEBUGGING
+					MF_PrintSrvConsole("\n# c=%c", *c);
+#endif
+					precision = temp;
+					c++;
+					while (0 <= (temp = *c - '0') && temp <= 9) {
+#ifdef SHOW_PARSER_DEBUGGING
+						MF_PrintSrvConsole("\n# c=%c", *c);
+#endif
+						precision *= 10;
+						precision += temp;
+						c++;
+					}
+				} else {
+					return false;
+				}
+			} else {
+#ifdef SHOW_PARSER_DEBUGGING
+				MF_PrintSrvConsole("; next");
+#endif
+			}
+
+#ifdef SHOW_PARSER_DEBUGGING
+			MF_PrintSrvConsole(";\n");
+#endif
+
+			if (*c == '\0') {
+				return false;
+			}
+		case 'd': case 'f': case 'l': case 'm': case 'n':
+		case 's': case 't': case '%':
+#ifdef SHOW_PARSER_DEBUGGING
+			MF_PrintSrvConsole("s c=%c\n", *c);
+#endif
+			switch (*c) {
+				case 'd': case 'f': case 'l': case 'm': case 'n':
+				case 's': case 't': case '%':
+					specifier = *c;
+					return true;
+			}			
+	}
+
+	return false;
+}
+
+int parseLoggerString(const char *format,
 			char *buffer, int bufferLen,
 			const char *date,
 			const char *message,
@@ -113,6 +221,8 @@ int formatLoggerString(const char *format,
 #endif
 
 	int offset = 0;
+	char specifier;
+	bool lJustify;
 	int len, width, precision;
 	const char *c = format;
 	goto skip;
@@ -121,7 +231,7 @@ nextIteration:
 skip:
 	for (; *c != '\0'; c++) {
 #ifdef SHOW_LOG_STRING_BUILDER
-		MF_PrintSrvConsole("->%s\n", buffer);
+		MF_PrintSrvConsole("->%s|%s\n", buffer, c);
 #endif
 		if (*c != '%') {
 			strncpyc(buffer + offset, *c, bufferLen - offset);
@@ -129,344 +239,32 @@ skip:
 			continue;
 		}
 
-		width = 0;
-		precision = 0;
+		assert (parseFormat(c, specifier, lJustify, width, precision));
+		switch (specifier) {
+			case 'd': len = strncpys(buffer + offset, date, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 'f': len = strncpys(buffer + offset, "function", precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 'l': len = strncpys(buffer + offset, message, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 'm': len = strncpys(buffer + offset, mapname, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 'n': len = strncpys(buffer + offset, plugin, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 's': len = strncpys(buffer + offset, severity, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 't': len = strncpys(buffer + offset, time, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case '%': len = strncpyc(buffer + offset, '%', precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+		}
 
-		c++;
-		switch (*c) {
-			case '\0': // EOS
-				goto ReturnStmt;
-			case '-':  // %-
-				while (true) {
-					c++;
-					switch (*c) {
-						case '\0':
-							goto ReturnStmt;
-						case '0': case '1': case '2': case '3': case '4':
-						case '5': case '6': case '7': case '8': case '9': // %-#
-							width *= 10;
-							width += (*c - '0');
-							break;
-						case '.':
-							while (true) {
-								c++;
-								switch (*c) {
-									case '\0':
-										goto ReturnStmt;
-									case '0': case '1': case '2': case '3': case '4':
-									case '5': case '6': case '7': case '8': case '9': // %-#.#
-										precision *= 10;
-										precision += (*c - '0');
-										break;
-									case 'd':  // %-#.#d
-										offset += (len = strncpys(buffer + offset, date, min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case 'f':  // %-#.#f
-										offset += (len = strncpys(buffer + offset, "function", min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case 'l':  // %-#.#l
-										offset += (len = strncpys(buffer + offset, message, min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case 'm':  // %-#.#m
-										offset += (len = strncpys(buffer + offset, mapname, min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case 'n':  // %-#.#n
-										offset += (len = strncpys(buffer + offset, plugin, min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case 's':  // %-#.#s
-										offset += (len = strncpys(buffer + offset, severity, min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case 't':  // %-#.#t
-										offset += (len = strncpys(buffer + offset, time, min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									case '%':  // %-#.#%
-										offset += (len = strncpyc(buffer + offset, '%', min(bufferLen - offset, precision)));
-										pad(width - len, offset, buffer, bufferLen);
-										goto nextIteration;
-									default:   // error, skip "%-#.#" and recover by backing up before incorrect symbol
-										c--;
-										break;
-								}
-							}
-
-							break;
-						case 'd':  // %-#d
-							offset += (len = strncpys(buffer + offset, date, bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case 'f':  // %-#f
-							offset += (len = strncpys(buffer + offset, "function", bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case 'l':  // %-#l
-							offset += (len = strncpys(buffer + offset, message, bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case 'm':  // %-#m
-							offset += (len = strncpys(buffer + offset, mapname, bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case 'n':  // %-#n
-							offset += (len = strncpys(buffer + offset, plugin, bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case 's':  // %-#s
-							offset += (len = strncpys(buffer + offset, severity, bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case 't':  // %-#t
-							offset += (len = strncpys(buffer + offset, time, bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						case '%':  // %-#%
-							offset += (len = strncpyc(buffer + offset, '%', bufferLen - offset));
-							pad(width - len, offset, buffer, bufferLen);
-							goto nextIteration;
-						default:   // error, skip "%-#" and recover by backing up before incorrect symbol
-							c--;
-							break;
-					}
-				}
-
-				break;
-			case '0': case '1': case '2': case '3': case '4':
-			case '5': case '6': case '7': case '8': case '9': // %#
-				width = (*c - '0');
-				while (true) {
-					c++;
-					switch (*c) {
-						case '\0':
-							goto ReturnStmt;
-						case '0': case '1': case '2': case '3': case '4':
-						case '5': case '6': case '7': case '8': case '9': // %#
-							width *= 10;
-							width += (*c - '0');
-							break;
-						case '.':
-							while (true) {
-								c++;
-								switch (*c) {
-									case '\0':
-										goto ReturnStmt;
-									case '0': case '1': case '2': case '3': case '4':
-									case '5': case '6': case '7': case '8': case '9': // %#.#
-										precision *= 10;
-										precision += (*c - '0');
-										break;
-									case 'd':  // %#.#d
-										len = strncpys(buffer + offset, date, min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case 'f':  // %#.#f
-										len = strncpys(buffer + offset, "function", min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case 'l':  // %#.#l
-										len = strncpys(buffer + offset, message, min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case 'm':  // %#.#m
-										len = strncpys(buffer + offset, mapname, min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case 'n':  // %#.#n
-										len = strncpys(buffer + offset, plugin, min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case 's':  // %#.#s
-										len = strncpys(buffer + offset, severity, min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case 't':  // %#.#t
-										len = strncpys(buffer + offset, time, min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									case '%':  // %#.#%
-										len = strncpyc(buffer + offset, '%', min(bufferLen - offset, precision));
-										shift(buffer + offset, len, width - len);
-										pad(width - len, offset, buffer, bufferLen);
-										offset += len;
-										goto nextIteration;
-									default:   // error, skip "%#.#" and recover by backing up before incorrect symbol
-										c--;
-										break;
-								}
-							}
-
-							break;
-						case 'd':  // %#d
-							len = strncpys(buffer + offset, date, bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'f':  // %#f
-							len = strncpys(buffer + offset, "function", bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'l':  // %#l
-							len = strncpys(buffer + offset, message, bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'm':  // %#m
-							len = strncpys(buffer + offset, mapname, bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'n':  // %#n
-							len = strncpys(buffer + offset, plugin, bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 's':  // %#s
-							len = strncpys(buffer + offset, severity, bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 't':  // %#t
-							len = strncpys(buffer + offset, time, bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case '%':  // %#%
-							len = strncpyc(buffer + offset, '%', bufferLen - offset);
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						default:   // error, skip "%#" and recover by backing up before incorrect symbol
-							c--;
-							break;
-					}
-				}
-
-				break;
-			case '.':
-				while (true) {
-					c++;
-					switch (*c) {
-						case '\0':
-							goto ReturnStmt;
-						case '0': case '1': case '2': case '3': case '4':
-						case '5': case '6': case '7': case '8': case '9': // %.#
-							precision *= 10;
-							precision += (*c - '0');
-							break;
-						case 'd':  // %.#d
-							len = strncpys(buffer + offset, date, min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'f':  // %.#f
-							len = strncpys(buffer + offset, "function", min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'l':  // %.#l
-							len = strncpys(buffer + offset, message, min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'm':  // %.#m
-							len = strncpys(buffer + offset, mapname, min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 'n':  // %.#n
-							len = strncpys(buffer + offset, plugin, min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 's':  // %.#s
-							len = strncpys(buffer + offset, severity, min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case 't':  // %.#t
-							len = strncpys(buffer + offset, time, min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						case '%':  // %.#%
-							len = strncpyc(buffer + offset, '%', min(bufferLen - offset, precision));
-							shift(buffer + offset, len, width - len);
-							pad(width - len, offset, buffer, bufferLen);
-							offset += len;
-							goto nextIteration;
-						default:   // error, skip "%.#" and recover by backing up before incorrect symbol
-							c--;
-							break;
-					}
-				}
-
-				break;
-			case 'd':  // %d
-				offset += strncpys(buffer + offset, date, bufferLen - offset);
-				break;
-			case 'f':  // %f
-				offset += strncpys(buffer + offset, "function", bufferLen - offset);
-				break;
-			case 'l':  // %l
-				offset += strncpys(buffer + offset, message, bufferLen - offset);
-				break;
-			case 'm':  // %m
-				offset += strncpys(buffer + offset, mapname, bufferLen - offset);
-				break;
-			case 'n':  // %n
-				offset += strncpys(buffer + offset, plugin, bufferLen - offset);
-				break;
-			case 's':  // %s
-				offset += strncpys(buffer + offset, severity, bufferLen - offset);
-				break;
-			case 't':  // %t
-				offset += strncpys(buffer + offset, time, bufferLen - offset);
-				break;
-			case '%':  // %%
-				offset += strncpyc(buffer + offset, '%', bufferLen - offset);
-				break;
-			default:   // error, skip percent and recover by backing up before incorrect symbol
-				c--;
-				break;
+		if (lJustify) {
+			offset += len;
+			pad(width - len, offset, buffer, bufferLen);
+		} else {
+			shift(buffer + offset, len, width - len);
+			pad(width - len, offset, buffer, bufferLen);
+			offset += len;
 		}
 	}
 
 ReturnStmt:
+#ifdef SHOW_LOG_STRING_BUILDER
+	MF_PrintSrvConsole("->%s|%s\n", buffer, c);
+#endif
 	strncpyc(buffer + offset, '\0', bufferLen - offset);
 	return offset;
 }
@@ -493,11 +291,10 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 	int messageLen = ke::SafeVsprintf(message, sizeof message - 1, msgFormat, arglst);
 	va_end(arglst);
 
-	//MF_PrintSrvConsole("got %s\n", plugin+31);
 	const char* severityStr = VERBOSITY[toIndex(severity)];
 
 	static char formattedMessage[4096];
-	int offset = formatLoggerString(
+	int offset = parseLoggerString(
 		getMessageFormat(),
 		formattedMessage, sizeof formattedMessage - 2,
 		date,
@@ -510,7 +307,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 	*(formattedMessage + offset + 1) = '\0';
 
 	static char fileName[256];
-	offset = formatLoggerString(
+	offset = parseLoggerString(
 		getNameFormat(),
 		fileName, sizeof fileName - 1,
 		date,
@@ -521,7 +318,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		STRING(gpGlobals->mapname));
 
 	static char path[256];
-	offset = formatLoggerString(
+	offset = parseLoggerString(
 		getPathFormat(),
 		path, sizeof path - 1,
 		date,
