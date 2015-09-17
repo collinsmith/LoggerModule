@@ -265,7 +265,7 @@ int parseLoggerString(const char *format,
 	return offset;
 }
 
-void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgFormat, ...) const {
+void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severity, const char* msgFormat, ...) const {
 	if (severity < getVerbosity()) {
 		return;
 	}
@@ -298,7 +298,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		time,
 		severityStr,
 		plugin->getName(),
-		"function",
+		function,
 		STRING(gpGlobals->mapname));
 	*(formattedMessage + offset) = '\n';
 	*(formattedMessage + offset + 1) = '\0';
@@ -312,7 +312,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		time,
 		severityStr,
 		plugin->getName(),
-		"function",
+		function,
 		STRING(gpGlobals->mapname));
 
 	static char path[256];
@@ -324,7 +324,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		time,
 		severityStr,
 		plugin->getName(),
-		"function",
+		function,
 		STRING(gpGlobals->mapname));
 
 	FILE *pF = NULL;
@@ -499,7 +499,7 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(p, params[2], buffer); // MF_GetScriptName(MF_FindScriptByAmx(amx))
+	logger->log(p, "function", params[2], buffer); // MF_GetScriptName(MF_FindScriptByAmx(amx))
 	return 1;
 }
 
