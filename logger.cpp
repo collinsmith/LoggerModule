@@ -666,7 +666,7 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 	{ "LoggerGetVerbosity",	LoggerGetVerbosity },
 	{ "LoggerSetVerbosity",	LoggerSetVerbosity },
 	{ "LoggerLog",			LoggerLog },
-	{ NULL,					NULL }
+	{ nullptr,				nullptr }
 };
 
 void OnAmxxAttach() {
