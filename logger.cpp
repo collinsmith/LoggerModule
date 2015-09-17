@@ -214,6 +214,7 @@ int parseLoggerString(const char *format,
 			const char *time,
 			const char *severity,
 			const char *plugin,
+			const char *function,
 			const char *mapname) {
 	
 #ifdef SHOW_LOG_STRING_BUILDER
@@ -238,7 +239,7 @@ int parseLoggerString(const char *format,
 		assert (parseFormat(c, specifier, lJustify, width, precision));
 		switch (specifier) {
 			case 'd': len = strncpys(buffer + offset, date, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
-			case 'f': len = strncpys(buffer + offset, "function", precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 'f': len = strncpys(buffer + offset, function, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'l': len = strncpys(buffer + offset, message, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'm': len = strncpys(buffer + offset, mapname, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'n': len = strncpys(buffer + offset, plugin, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
@@ -297,6 +298,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		time,
 		severityStr,
 		plugin->getName(),
+		"function",
 		STRING(gpGlobals->mapname));
 	*(formattedMessage + offset) = '\n';
 	*(formattedMessage + offset + 1) = '\0';
@@ -310,6 +312,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		time,
 		severityStr,
 		plugin->getName(),
+		"function",
 		STRING(gpGlobals->mapname));
 
 	static char path[256];
@@ -321,6 +324,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, int severity, const char* msgForm
 		time,
 		severityStr,
 		plugin->getName(),
+		"function",
 		STRING(gpGlobals->mapname));
 
 	FILE *pF = NULL;
