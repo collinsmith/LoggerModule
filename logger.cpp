@@ -393,7 +393,7 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 	int verbosity = params[1];
 	char* nameFormat = MF_GetAmxString(amx, params[2], 0, &len);
 	if (!isValidLoggerFormat(nameFormat, percentLoc, errorLoc)) {
-		char *error = new char[errorLoc - percentLoc + 1];
+		char *error = new char[errorLoc - percentLoc + 2];
 		strncpy(error, nameFormat + percentLoc, errorLoc - percentLoc + 1);
 		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", nameFormat, percentLoc + 1, error);
 		delete[] error;
@@ -402,7 +402,7 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 
 	char* msgFormat = MF_GetAmxString(amx, params[3], 1, &len);
 	if (!isValidLoggerFormat(msgFormat, percentLoc, errorLoc)) {
-		char *error = new char[errorLoc - percentLoc + 1];
+		char *error = new char[errorLoc - percentLoc + 2];
 		strncpy(error, msgFormat + percentLoc, errorLoc - percentLoc + 1);
 		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", msgFormat, percentLoc + 1, error);
 		delete[] error;
@@ -413,7 +413,7 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 	char* timeFormat = MF_GetAmxString(amx, params[5], 3, &len);
 	char* path = MF_GetAmxString(amx, params[6], 4, &len);
 	if (!isValidLoggerFormat(path, percentLoc, errorLoc)) {
-		char *error = new char[errorLoc - percentLoc + 1];
+		char *error = new char[errorLoc - percentLoc + 2];
 		strncpy(error, path + percentLoc, errorLoc - percentLoc + 1);
 		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", path, percentLoc + 1, error);
 		delete[] error;
