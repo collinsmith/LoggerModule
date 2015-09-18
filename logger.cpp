@@ -329,14 +329,9 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 
 	FILE *pF = NULL;
 	if (getPathFormat()[0]) {
-		UTIL_Format(path, sizeof path - 1, "%s/%s.log",
-			path,
-			fileName,
-			date);
+		UTIL_Format(path, sizeof path - 1, "%s/%s.log", path, fileName);
 	} else {
-		UTIL_Format(path, sizeof path - 1, "%s.log",
-			fileName,
-			date);
+		UTIL_Format(path, sizeof path - 1, "%s.log", fileName);
 	}
 
 	static char fullPath[256];
