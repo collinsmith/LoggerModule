@@ -10,8 +10,6 @@
 
 NativeHandler<Logger> LoggerHandles;
 
-bool m_LoggedMap = false;
-
 const char* VERBOSITY[] = {
 	"ERROR",
 	"WARN",
@@ -38,9 +36,8 @@ int Logger::getVerbosity() const {
 }
 
 int Logger::setVerbosity(int verbosity) {
-	assert (LOG_SEVERITY_NONE <= verbosity);
 	int oldVerbosity = m_Verbosity;
-	m_Verbosity = verbosity;
+	m_Verbosity = max(LOG_SEVERITY_NONE, verbosity);
 	return oldVerbosity;
 }
 
@@ -266,7 +263,7 @@ int parseLoggerString(const char *format,
 }
 
 void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severity, const char* msgFormat, ...) const {
-	if (severity < getVerbosity()) {
+	if (severity < Logger::getAllVerbosity() || severity < getVerbosity()) {
 		return;
 	}
 
@@ -354,16 +351,10 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 	FILE *pF = NULL;
 	pF = fopen(fullPath, "a+");
 	if (pF) {
-		if (!m_LoggedMap) {
-			//fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time);
-			//fprintf(pF, "[%-5s] [%s] Map: \"%s\"; File: \"%s\"\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time, STRING(gpGlobals->mapname), fileName);
-			m_LoggedMap = true;
-		}
-
 		fprintf(pF, formattedMessage);
 		fclose(pF);
 	} else {
-		ALERT(at_logged, "[LOGGER] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", fullPath);
+		ALERT(at_logged, "[%s] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", MODULE_LOGTAG, fullPath);
 		return;
 	}
 
@@ -432,13 +423,19 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 		return INVALID_LOGGER;
 	}
 
-	return static_cast<cell>(LoggerHandles.create(
-			verbosity,
-			nameFormat,
-			msgFormat,
-			dateFormat,
-			timeFormat,
-			path));
+	int loggerHandle = LoggerHandles.create(
+		verbosity,
+		nameFormat,
+		msgFormat,
+		dateFormat,
+		timeFormat,
+		path);
+
+	Logger *logger = LoggerHandles.lookup(loggerHandle);
+	assert (logger);
+	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
+	logger->log(p, "function", LOG_SEVERITY_INFO, "Logger initialized; map: %s", STRING(gpGlobals->mapname));
+	return static_cast<cell>(loggerHandle);
 }
 
 // native bool:LoggerDestroy(&Logger:logger);
@@ -507,7 +504,7 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(p, "function", params[2], buffer); // MF_GetScriptName(MF_FindScriptByAmx(amx))
+	logger->log(p, "function", params[2], buffer);
 	return 1;
 }
 

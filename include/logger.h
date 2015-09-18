@@ -39,13 +39,12 @@ public:
 	};
 
 private:
+	int m_Verbosity;
 	const ke::AString m_pNameFormat;
 	const ke::AString m_pMessageFormat;
 	const ke::AString m_pDateFormat;
 	const ke::AString m_pTimeFormat;
 	const ke::AString m_pPathFormat;
-
-	int m_Verbosity;
 
 public:
 	Logger(int verbosity,
@@ -54,12 +53,14 @@ public:
 				const char* dateFormat,
 				const char* timeFormat,
 				const char* pathFormat)
-			: m_Verbosity(verbosity),
+			: 
 				m_pNameFormat(nameFormat),
 				m_pMessageFormat(messageFormat),
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
-				m_pPathFormat(pathFormat) {};
+				m_pPathFormat(pathFormat) {
+		setVerbosity(verbosity);
+	};
 
 public:
 	int getVerbosity() const;
