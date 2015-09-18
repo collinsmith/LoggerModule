@@ -290,7 +290,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 	const char* severityStr = VERBOSITY[toIndex(severity)];
 
 	static char formattedMessage[4096];
-	int offset = parseLoggerString(
+	int len = parseLoggerString(
 		getMessageFormat(),
 		formattedMessage, sizeof formattedMessage - 2,
 		date,
@@ -300,11 +300,11 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		plugin->getName(),
 		function,
 		STRING(gpGlobals->mapname));
-	*(formattedMessage + offset) = '\n';
-	*(formattedMessage + offset + 1) = '\0';
+	*(formattedMessage + len) = '\n';
+	*(formattedMessage + len + 1) = '\0';
 
 	static char fileName[256];
-	offset = parseLoggerString(
+	int fileNameLen = parseLoggerString(
 		getNameFormat(),
 		fileName, sizeof fileName - 1,
 		date,
@@ -316,7 +316,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		STRING(gpGlobals->mapname));
 
 	static char path[256];
-	offset = parseLoggerString(
+	int pathLen = parseLoggerString(
 		getPathFormat(),
 		path, sizeof path - 1,
 		date,
@@ -327,19 +327,32 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		function,
 		STRING(gpGlobals->mapname));
 
-	FILE *pF = NULL;
-	if (getPathFormat()[0]) {
-		UTIL_Format(path, sizeof path - 1, "%s/%s.log", path, fileName);
-	} else {
-		UTIL_Format(path, sizeof path - 1, "%s.log", fileName);
+	static char fullPath[256];
+	static const char *amxxLogsDir;
+	if (!amxxLogsDir) {
+		amxxLogsDir = MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs");
+		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s", amxxLogsDir);
+#if defined(__linux__) || defined(__APPLE__)
+		mkdir(amxxLogsDir, 0700);
+#else
+		mkdir(amxxLogsDir);
+#endif
 	}
 
-	static char fullPath[256];
-	MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s",
-			MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs"),
-			path);
+	if (getPathFormat()[0] != '\0') {
+		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s", amxxLogsDir, path);
+#if defined(__linux__) || defined(__APPLE__)
+		mkdir(fullPath, 0700);
+#else
+		mkdir(fullPath);
+#endif
+		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s/%s.log", amxxLogsDir, path, fileName);
+	} else {
+		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s.log", amxxLogsDir, fileName);
+	}
+	
+	FILE *pF = NULL;
 	pF = fopen(fullPath, "a+");
-
 	if (pF) {
 		if (!m_LoggedMap) {
 			//fprintf(pF, "[%-5s] [%s] Start of logging session.\n", VERBOSITY[toIndex(LOG_SEVERITY_INFO)], time);
@@ -509,4 +522,8 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 
 void OnAmxxAttach() {
 	MF_AddNatives(amxmodx_Natives);
+}
+
+void ServerActivate(edict_s *edict, int edictCount, int clientMax) {
+
 }
