@@ -9,6 +9,7 @@
 #define ALL_LOGGERS    -1
 
 NativeHandler<Logger> LoggerHandles;
+bool ResetCounters = false;
 
 const char* VERBOSITY[] = {
 	"ERROR",
@@ -522,6 +523,29 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 
 void OnAmxxAttach() {
 	MF_AddNatives(amxmodx_Natives);
+
+	/*
+
+	long long nextReset = atoll(MF_GetLocalInfo("logger_nextReset", "-1"));
+	MF_PrintSrvConsole("nextReset=%lld\n", nextReset);
+	time_t t1;
+	time(&t1);
+	localtime(&t1);
+	if (nextReset < t1) {
+		time_t t2;
+		time(&t2);
+		t2 += 86400;
+		tm* t3 = localtime(&t2);
+		t3->tm_hour = 0;
+		t3->tm_min = 0;
+		t3->tm_sec = 0;
+		time_t t4 = mktime(t3);
+		MF_PrintSrvConsole("nextReset=%lld\n", t4);
+		char buffer[32];
+		sprintf(buffer, "%lld", static_cast<long long>(t4));
+		SET_LOCALINFO("logger_nextReset", buffer);
+		ResetCounters = true;
+	}*/
 }
 
 void OnAmxxDetach() {
