@@ -521,14 +521,6 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 };
 
 void OnAmxxAttach() {
-	char value[16];
-	itoa(Logger::getAllVerbosity(), value, 10);
-	cvar_t cvar { "logger_min_verbosity", value, FCVAR_SERVER|FCVAR_SPONLY, Logger::getAllVerbosity() };
-	CVAR_REGISTER(&cvar);
-
-	Logger::setAllVerbosity(atoi(CVAR_GET_STRING("logger_min_verbosity")));
-	MF_PrintSrvConsole("verb=%d\n", atoi(CVAR_GET_STRING("logger_min_verbosity")));
-
 	MF_AddNatives(amxmodx_Natives);
 }
 
