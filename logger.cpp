@@ -9,7 +9,7 @@
 #define ALL_LOGGERS    -1
 
 NativeHandler<Logger> LoggerHandles;
-bool ResetCounters = false;
+char MapCounter[32];
 
 const char* VERBOSITY[] = {
 	"ERROR",
@@ -189,14 +189,14 @@ bool parseFormat(const char *&c, char &specifier, bool &lJustify, int &width, in
 			if (*c == '\0') {
 				return false;
 			}
-		case 'd': case 'f': case 'l': case 'm': case 'n':
-		case 's': case 't': case '%':
+		case 'd': case 'f': case 'i': case 'l': case 'm':
+		case 'n': case 's': case 't': case '%':
 #ifdef SHOW_PARSER_DEBUGGING
 			MF_PrintSrvConsole("s c=%c\n", *c);
 #endif
 			switch (*c) {
-				case 'd': case 'f': case 'l': case 'm': case 'n':
-				case 's': case 't': case '%':
+				case 'd': case 'f': case 'i': case 'l': case 'm':
+				case 'n': case 's': case 't': case '%':
 					specifier = *c;
 					return true;
 			}			
@@ -238,6 +238,7 @@ int parseLoggerString(const char *format,
 		switch (specifier) {
 			case 'd': len = strncpys(buffer + offset, date, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'f': len = strncpys(buffer + offset, function, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
+			case 'i': len = strncpys(buffer + offset, MapCounter, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'l': len = strncpys(buffer + offset, message, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'm': len = strncpys(buffer + offset, mapname, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
 			case 'n': len = strncpys(buffer + offset, plugin, precision == -1 ? bufferLen - offset : min(bufferLen - offset, precision)); break;
@@ -358,7 +359,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		fprintf(pF, formattedMessage);
 		fclose(pF);
 	} else {
-		ALERT(at_logged, "[%s] Unexpected fatal logging error (couldn't open %s for a+). Logger disabled for this map.\n", MODULE_LOGTAG, fullPath);
+		ALERT(at_logged, "[%s] Unexpected fatal logging error (couldn't open %s for a+).\n", MODULE_LOGTAG, fullPath);
 		return;
 	}
 
@@ -512,6 +513,52 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	return 1;
 }
 
+void updateCounterTime() {
+	char dataFile[256];
+	const char* amxxDataDir = MF_GetLocalInfo("amxx_datadir", "addons/amxmodx/data");
+	MF_BuildPathnameR(dataFile, sizeof dataFile - 1, "%s/logger.dat", amxxDataDir);
+	FILE *pF = NULL;
+	pF = fopen(dataFile, "a+");
+	if (pF) {
+		rewind(pF);
+
+		char timestamp[32], count[32];
+		fgets(timestamp, sizeof timestamp - 1, pF);
+		long long nextReset = atoll(timestamp);
+		fgets(count, sizeof count - 1, pF);
+		int counter = atoi(count);
+		time_t t1;
+		time(&t1);
+		localtime(&t1);
+		pF = freopen(dataFile, "w", pF);
+		assert(pF);
+		if (nextReset < t1) {
+			time_t t2;
+			time(&t2);
+			t2 += 86400;
+			tm* t3 = localtime(&t2);
+			t3->tm_hour = 0;
+			t3->tm_min = 0;
+			t3->tm_sec = 0;
+			time_t t4 = mktime(t3);
+			counter = 1;
+			fprintf(pF, "%lld\n", static_cast<long long>(t4));
+			fprintf(pF, "%d", counter);
+		} else {
+			counter++;
+			fprintf(pF, "%s", timestamp);
+			fprintf(pF, "%d", counter);
+		}
+
+		fflush(pF);
+		fclose(pF);
+		itoa(counter, MapCounter, 10);
+	} else {
+		ALERT(at_logged, "[%s] Unexpected fatal logging error (couldn't open %s for a+).\n", MODULE_LOGTAG, dataFile);
+		return;
+	}
+}
+
 AMX_NATIVE_INFO amxmodx_Natives[] = {
 	{ "LoggerCreate",		LoggerCreate },
 	{ "LoggerDestroy",		LoggerDestroy },
@@ -523,31 +570,13 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 
 void OnAmxxAttach() {
 	MF_AddNatives(amxmodx_Natives);
-
-	/*
-
-	long long nextReset = atoll(MF_GetLocalInfo("logger_nextReset", "-1"));
-	MF_PrintSrvConsole("nextReset=%lld\n", nextReset);
-	time_t t1;
-	time(&t1);
-	localtime(&t1);
-	if (nextReset < t1) {
-		time_t t2;
-		time(&t2);
-		t2 += 86400;
-		tm* t3 = localtime(&t2);
-		t3->tm_hour = 0;
-		t3->tm_min = 0;
-		t3->tm_sec = 0;
-		time_t t4 = mktime(t3);
-		MF_PrintSrvConsole("nextReset=%lld\n", t4);
-		char buffer[32];
-		sprintf(buffer, "%lld", static_cast<long long>(t4));
-		SET_LOCALINFO("logger_nextReset", buffer);
-		ResetCounters = true;
-	}*/
 }
 
 void OnAmxxDetach() {
 	LoggerHandles.clear();
+}
+
+void FN_ServerActivate(edict_t *pEdictList, int edictCount, int clientMax) {
+	updateCounterTime();
+	RETURN_META(MRES_IGNORED);
 }
