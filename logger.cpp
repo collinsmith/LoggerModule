@@ -523,7 +523,3 @@ AMX_NATIVE_INFO amxmodx_Natives[] = {
 void OnAmxxAttach() {
 	MF_AddNatives(amxmodx_Natives);
 }
-
-void ServerActivate(edict_s *edict, int edictCount, int clientMax) {
-
-}
