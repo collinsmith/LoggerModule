@@ -263,7 +263,7 @@ int parseLoggerString(const char *format,
 }
 
 void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severity, const char* msgFormat, ...) const {
-	if (severity < Logger::getAllVerbosity() || severity < getVerbosity()) {
+	if (!plugin->isDebug() && (severity < Logger::getAllVerbosity() || severity < getVerbosity())) {
 		return;
 	}
 
@@ -286,6 +286,9 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 
 	const char* severityStr = VERBOSITY[toIndex(severity)];
 
+	static char pluginName[64];
+	strcpy(pluginName, plugin->getName());
+	*strrchr(pluginName, '.') = '\0';
 	static char formattedMessage[4096];
 	int len = parseLoggerString(
 		getMessageFormat(),
@@ -294,7 +297,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		message,
 		time,
 		severityStr,
-		plugin->getName(),
+		pluginName,
 		function,
 		STRING(gpGlobals->mapname));
 	*(formattedMessage + len) = '\n';
@@ -308,7 +311,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		message,
 		time,
 		severityStr,
-		plugin->getName(),
+		pluginName,
 		function,
 		STRING(gpGlobals->mapname));
 
@@ -320,7 +323,7 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, int severit
 		message,
 		time,
 		severityStr,
-		plugin->getName(),
+		pluginName,
 		function,
 		STRING(gpGlobals->mapname));
 
