@@ -264,6 +264,45 @@ int parseLoggerString(const char *format,
 	return offset;
 }
 
+#if defined(_WIN32)
+	#define PATH_SEP_CHAR		'\\'
+	#define ALT_SEP_CHAR		'/'
+#else
+	#define PATH_SEP_CHAR		'/'
+	#define ALT_SEP_CHAR		'\\'
+#endif
+
+char* build_pathname_and_mkdir_r(char *buffer, size_t maxlen, const char *fmt, ...) {
+	UTIL_Format(buffer, maxlen, "%s%c", MF_GetModname(), PATH_SEP_CHAR);
+
+	size_t len = strlen(buffer);
+	char *ptr = buffer + len;
+
+	va_list argptr;
+	va_start(argptr, fmt);
+	vsnprintf(ptr, maxlen - len, fmt, argptr);
+	va_end(argptr);
+
+	while (*ptr) {
+		switch (*ptr) {
+			case ALT_SEP_CHAR:
+			case PATH_SEP_CHAR:
+#if defined(__linux__) || defined(__APPLE__)
+				mkdir(buffer, 0700);
+#else
+				*ptr = '\0';
+				mkdir(buffer);
+				MF_PrintSrvConsole("mkdir = %s\n", buffer);
+				*ptr = PATH_SEP_CHAR;
+#endif
+		}
+
+		++ptr;
+	}
+
+	return buffer;
+}
+
 void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, const int severity, const bool printStackTrace, const char* msgFormat, ...) const {
 	if (!plugin->isDebug() && (severity < Logger::getAllVerbosity() || severity < getVerbosity())) {
 		return;
@@ -329,28 +368,17 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, const int s
 		function,
 		STRING(gpGlobals->mapname));
 
-	static char fullPath[256];
 	static const char *amxxLogsDir;
 	if (!amxxLogsDir) {
 		amxxLogsDir = MF_GetLocalInfo("amxx_logsdir", "addons/amxmodx/logs");
-		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s", amxxLogsDir);
-#if defined(__linux__) || defined(__APPLE__)
-		mkdir(amxxLogsDir, 0700);
-#else
-		mkdir(amxxLogsDir);
-#endif
 	}
 
+	static char fullPath[256];
 	if (getPathFormat()[0] != '\0') {
-		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s", amxxLogsDir, path);
-#if defined(__linux__) || defined(__APPLE__)
-		mkdir(fullPath, 0700);
-#else
-		mkdir(fullPath);
-#endif
-		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s/%s.log", amxxLogsDir, path, fileName);
+		build_pathname_and_mkdir_r(fullPath, sizeof fullPath - 1, "%s/%s/%s.log", amxxLogsDir, path, fileName);
+		MF_PrintSrvConsole("Path = %s\n", fullPath);
 	} else {
-		MF_BuildPathnameR(fullPath, sizeof fullPath - 1, "%s/%s.log", amxxLogsDir, fileName);
+		build_pathname_and_mkdir_r(fullPath, sizeof fullPath - 1, "%s/%s.log", amxxLogsDir, fileName);
 	}
 	
 	FILE *pF = NULL;
