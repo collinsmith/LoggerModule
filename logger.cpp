@@ -46,20 +46,40 @@ const char* Logger::getNameFormat() const {
 	return m_pNameFormat.chars();
 }
 
+void Logger::setNameFormat(const char* nameFormat) {
+	m_pNameFormat = nameFormat;
+}
+
 const char* Logger::getMessageFormat() const {
 	return m_pMessageFormat.chars();
+}
+
+void Logger::setMessageFormat(const char* messageFormat) {
+	m_pMessageFormat = messageFormat;
 }
 
 const char* Logger::getDateFormat() const {
 	return m_pDateFormat.chars();
 }
 
+void Logger::setDateFormat(const char* dateFormat) {
+	m_pDateFormat = dateFormat;
+}
+
 const char* Logger::getTimeFormat() const {
 	return m_pTimeFormat.chars();
 }
 
+void Logger::setTimeFormat(const char* timeFormat) {
+	m_pTimeFormat = timeFormat;
+}
+
 const char* Logger::getPathFormat() const {
 	return m_pPathFormat.chars();
+}
+
+void Logger::setPathFormat(const char* pathFormat) {
+	m_pPathFormat = pathFormat;
 }
 
 int strncpys(char *destination, const char *source, int len) {
@@ -528,6 +548,155 @@ static cell AMX_NATIVE_CALL LoggerSetVerbosity(AMX* amx, cell* params) {
 	return logger->setVerbosity(params[2]);
 }
 
+// native LoggerGetNameFormat(const Logger:logger, format[], const len);
+static cell AMX_NATIVE_CALL LoggerGetNameFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	return 	MF_SetAmxString(amx, params[2], logger->getNameFormat(), params[3]);
+}
+
+// native LoggerSetNameFormat(const Logger:logger, const format[]);
+static cell AMX_NATIVE_CALL LoggerSetNameFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	int len, percentLoc, errorLoc;
+	const char* nameFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	if (!isValidLoggerFormat(nameFormat, percentLoc, errorLoc)) {
+		char *error = new char[errorLoc - percentLoc + 2];
+		strncpy(error, nameFormat + percentLoc, errorLoc - percentLoc + 1);
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", nameFormat, percentLoc + 1, error);
+		delete[] error;
+		return INVALID_LOGGER;
+	}
+
+	logger->setNameFormat(nameFormat);
+	return 1;
+}
+
+// native LoggerGetMessageFormat(const Logger:logger, format[], const len);
+static cell AMX_NATIVE_CALL LoggerGetMessageFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	return 	MF_SetAmxString(amx, params[2], logger->getMessageFormat(), params[3]);
+}
+
+// native LoggerSetMessageFormat(const Logger:logger, const format[]);
+static cell AMX_NATIVE_CALL LoggerSetMessageFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	int len, percentLoc, errorLoc;
+	const char* messageFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	if (!isValidLoggerFormat(messageFormat, percentLoc, errorLoc)) {
+		char *error = new char[errorLoc - percentLoc + 2];
+		strncpy(error, messageFormat + percentLoc, errorLoc - percentLoc + 1);
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", messageFormat, percentLoc + 1, error);
+		delete[] error;
+		return INVALID_LOGGER;
+	}
+
+	logger->setMessageFormat(messageFormat);
+	return 1;
+}
+
+// native LoggerGetDateFormat(const Logger:logger, format[], const len);
+static cell AMX_NATIVE_CALL LoggerGetDateFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	return 	MF_SetAmxString(amx, params[2], logger->getDateFormat(), params[3]);
+}
+
+// native LoggerSetDateFormat(const Logger:logger, const format[]);
+static cell AMX_NATIVE_CALL LoggerSetDateFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	int len;
+	const char* dateFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	logger->setDateFormat(dateFormat);
+	return 1;
+}
+
+// native LoggerGetTimeFormat(const Logger:logger, format[], const len);
+static cell AMX_NATIVE_CALL LoggerGetTimeFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	return 	MF_SetAmxString(amx, params[2], logger->getTimeFormat(), params[3]);
+}
+
+// native LoggerSetTimeFormat(const Logger:logger, const format[]);
+static cell AMX_NATIVE_CALL LoggerSetTimeFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	int len;
+	const char* timeFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	logger->setTimeFormat(timeFormat);
+	return 1;
+}
+
+// native LoggerGetPathFormat(const Logger:logger, format[], const len);
+static cell AMX_NATIVE_CALL LoggerGetPathFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	return 	MF_SetAmxString(amx, params[2], logger->getPathFormat(), params[3]);
+}
+
+// native LoggerSetPathFormat(const Logger:logger, const format[]);
+static cell AMX_NATIVE_CALL LoggerSetPathFormat(AMX* amx, cell* params) {
+	Logger* logger = LoggerHandles.lookup(params[1]);
+	if (!logger) {
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger handle provided (%d)", params[1]);
+		return 0;
+	}
+
+	int len, percentLoc, errorLoc;
+	const char* pathFormat = MF_GetAmxString(amx, params[2], 0, &len);
+	if (!isValidLoggerFormat(pathFormat, percentLoc, errorLoc)) {
+		char *error = new char[errorLoc - percentLoc + 2];
+		strncpy(error, pathFormat + percentLoc, errorLoc - percentLoc + 1);
+		MF_LogError(amx, AMX_ERR_NATIVE, "Invalid logger name format provided: \"%s\" (position %d = \"%s\")", pathFormat, percentLoc + 1, error);
+		delete[] error;
+		return INVALID_LOGGER;
+	}
+
+	logger->setPathFormat(pathFormat);
+	return 1;
+}
+
 // native LoggerLog(const Logger:logger, const Severity:severity, const bool:printStackTrace, const format[], any:...);
 static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 	if (params[2] < Logger::getAllVerbosity()) {
@@ -665,15 +834,33 @@ void updateCounterTime() {
 }
 
 AMX_NATIVE_INFO amxmodx_Natives[] = {
-	{ "LoggerCreate",		LoggerCreate },
-	{ "LoggerDestroy",		LoggerDestroy },
-	{ "LoggerGetVerbosity",	LoggerGetVerbosity },
-	{ "LoggerSetVerbosity",	LoggerSetVerbosity },
-	{ "LoggerLog",			LoggerLog },
-	{ "LoggerLogError",		LoggerLogError },
-	{ "LoggerLogWarn",		LoggerLogWarn },
-	{ "LoggerLogInfo",		LoggerLogInfo },
-	{ "LoggerLogDebug",		LoggerLogDebug },
+	{ "LoggerCreate",			LoggerCreate },
+	{ "LoggerDestroy",			LoggerDestroy },
+
+	{ "LoggerGetVerbosity",		LoggerGetVerbosity },
+	{ "LoggerSetVerbosity",		LoggerSetVerbosity },
+
+	{ "LoggerGetNameFormat",	LoggerGetNameFormat },
+	{ "LoggerSetNameFormat",	LoggerSetNameFormat },
+
+	{ "LoggerGetMessageFormat",	LoggerGetMessageFormat },
+	{ "LoggerSetMessageFormat",	LoggerSetMessageFormat },
+
+	{ "LoggerGetDateFormat",	LoggerGetDateFormat },
+	{ "LoggerSetDateFormat",	LoggerSetDateFormat },
+
+	{ "LoggerGetTimeFormat",	LoggerGetTimeFormat },
+	{ "LoggerSetTimeFormat",	LoggerSetTimeFormat },
+
+	{ "LoggerGetPathFormat",	LoggerGetPathFormat },
+	{ "LoggerSetPathFormat",	LoggerSetPathFormat },
+
+	{ "LoggerLog",				LoggerLog },
+
+	{ "LoggerLogError",			LoggerLogError },
+	{ "LoggerLogWarn",			LoggerLogWarn },
+	{ "LoggerLogInfo",			LoggerLogInfo },
+	{ "LoggerLogDebug",			LoggerLogDebug },
 	{ nullptr,				nullptr }
 };
 

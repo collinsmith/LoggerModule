@@ -40,11 +40,11 @@ public:
 
 private:
 	int m_Verbosity;
-	const ke::AString m_pNameFormat;
-	const ke::AString m_pMessageFormat;
-	const ke::AString m_pDateFormat;
-	const ke::AString m_pTimeFormat;
-	const ke::AString m_pPathFormat;
+	ke::AString m_pNameFormat;
+	ke::AString m_pMessageFormat;
+	ke::AString m_pDateFormat;
+	ke::AString m_pTimeFormat;
+	ke::AString m_pPathFormat;
 
 public:
 	Logger(int verbosity,
@@ -59,7 +59,7 @@ public:
 				m_pDateFormat(dateFormat),
 				m_pTimeFormat(timeFormat),
 				m_pPathFormat(pathFormat) {
-		setVerbosity(verbosity);
+		m_Verbosity = max(LOG_SEVERITY_NONE, verbosity);
 	};
 
 public:
@@ -67,10 +67,19 @@ public:
 	int setVerbosity(int verbosity);
 
 	const char* getNameFormat() const;
+	void setNameFormat(const char* nameFormat);
+
 	const char* getMessageFormat() const;
+	void setMessageFormat(const char* messageFormat);
+
 	const char* getDateFormat() const;
+	void setDateFormat(const char* dateFormat);
+
 	const char* getTimeFormat() const;
+	void setTimeFormat(const char* timeFormat);
+
 	const char* getPathFormat() const;
+	void setPathFormat(const char* pathFormat);
 
 	void log(AMX* amx, const int severity, const bool printStackTrace, const char* format, ...) const;
 };

@@ -17,21 +17,36 @@
  ******************************************************************************/
 
 native Logger:LoggerCreate(
-        verbosity = Severity_Warn,
+        const Severity:verbosity = Severity_Warn,
         const nameFormat[] = DEFAULT_LOGGER_NAME_FORMAT,
         const msgFormat[] = DEFAULT_LOGGER_MSG_FORMAT,
         const dateFormat[] = DEFAULT_LOGGER_DATE_FORMAT,
         const timeFormat[] = DEFAULT_LOGGER_TIME_FORMAT,
-        const path[] = DEFAULT_LOGGER_PATH);
+        const pathFormat[] = DEFAULT_LOGGER_PATH);
 
 native bool:LoggerDestroy(&Logger:logger);
 
-native LoggerGetVerbosity(Logger:logger);
-native LoggerSetVerbosity(Logger:logger, verbosity);
+native Severity:LoggerGetVerbosity(const Logger:logger);
+native Severity:LoggerSetVerbosity(const Logger:logger, const Severity:verbosity);
 
-native LoggerLog(Logger:logger, severity, bool:printStackTrace, const format[], any:...);
+native LoggerGetNameFormat(const Logger:logger, format[], const len);
+native LoggerSetNameFormat(const Logger:logger, const format[]);
 
-native LoggerLogError(Logger:logger, bool:printStackTrace = true, const format[], any:...);
-native LoggerLogWarn(Logger:logger, bool:printStackTrace = true, const format[], any:...);
-native LoggerLogInfo(Logger:logger, bool:printStackTrace = false, const format[], any:...);
-native LoggerLogDebug(Logger:logger, bool:printStackTrace = false, const format[], any:...);
+native LoggerGetMessageFormat(const Logger:logger, format[], const len);
+native LoggerSetMessageFormat(const Logger:logger, const format[]);
+
+native LoggerGetDateFormat(const Logger:logger, format[], const len);
+native LoggerSetDateFormat(const Logger:logger, const format[]);
+
+native LoggerGetTimeFormat(const Logger:logger, format[], const len);
+native LoggerSetTimeFormat(const Logger:logger, const format[]);
+
+native LoggerGetPathFormat(const Logger:logger, format[], const len);
+native LoggerSetPathFormat(const Logger:logger, const format[]);
+
+native LoggerLog(const Logger:logger, const Severity:severity, const bool:printStackTrace, const format[], any:...);
+
+native LoggerLogError(const Logger:logger, bool:printStackTrace = true, const format[], any:...);
+native LoggerLogWarn(const Logger:logger, bool:printStackTrace = true, const format[], any:...);
+native LoggerLogInfo(const Logger:logger, bool:printStackTrace = false, const format[], any:...);
+native LoggerLogDebug(const Logger:logger, bool:printStackTrace = false, const format[], any:...);

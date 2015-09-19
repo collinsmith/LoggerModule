@@ -12,7 +12,7 @@ enum Logger {
     Invalid_Logger
 };
 
-enum /*Severity*/ {
+enum Severity {
     Severity_Invalid = -1,
     Severity_None    = 0,
     Severity_Debug   = 1,
