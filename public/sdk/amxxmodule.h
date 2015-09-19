@@ -28,6 +28,11 @@
 #include "osdep.h"
 #endif // #ifdef USE_METAMOD
 
+#define UD_FINDPLUGIN	3
+#define UD_DEBUGGER		2
+#define UD_OPCODELIST	1
+#define	UD_HANDLER		0
+
 // DLL Export
 #undef DLLEXPORT
 #if defined(_WIN32)

@@ -302,10 +302,13 @@ char* build_pathname_and_mkdir_r(char *buffer, size_t maxlen, const char *fmt, .
 	return buffer;
 }
 
-void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, const int severity, const bool printStackTrace, const char* msgFormat, ...) const {
+void Logger::log(AMX* amx, const int severity, const bool printStackTrace, const char* msgFormat, ...) const {
+	CPluginMngr::CPlugin *plugin = (CPluginMngr::CPlugin*)amx->userdata[UD_FINDPLUGIN];
 	if (!plugin->isDebug() && (severity < Logger::getAllVerbosity() || severity < getVerbosity())) {
 		return;
 	}
+
+	const char *function = "function";
 
 	time_t td;
 	time(&td);
@@ -390,6 +393,10 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, const int s
 	}
 
 	MF_PrintSrvConsole(formattedMessage);
+
+	if (printStackTrace) {
+		amx->userdata[UD_DEBUGGER];
+	}
 }
 
 bool isValidLoggerFormat(const char *str, int &percentLoc, int &errorLoc) {
@@ -464,8 +471,8 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 
 	Logger *logger = LoggerHandles.lookup(loggerHandle);
 	assert (logger);
-	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
-	logger->log(p, "function", LOG_SEVERITY_INFO, false, "Logger initialized; map: %s", STRING(gpGlobals->mapname));
+	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[UD_FINDPLUGIN];
+	logger->log(amx, LOG_SEVERITY_INFO, false, "Logger initialized; map: %s", STRING(gpGlobals->mapname));
 	return static_cast<cell>(loggerHandle);
 }
 
@@ -532,10 +539,9 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 		return 0;
 	}
 
-	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 4, &len);
-	logger->log(p, "function", params[2], params[3], buffer);
+	logger->log(amx, params[2], params[3], buffer);
 	return 1;
 }
 
@@ -551,10 +557,9 @@ static cell AMX_NATIVE_CALL LoggerLogError(AMX* amx, cell* params) {
 		return 0;
 	}
 
-	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(p, "function", LOG_SEVERITY_ERROR, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_ERROR, params[2], buffer);
 	return 1;
 }
 
@@ -570,10 +575,9 @@ static cell AMX_NATIVE_CALL LoggerLogWarn(AMX* amx, cell* params) {
 		return 0;
 	}
 
-	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(p, "function", LOG_SEVERITY_WARN, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_WARN, params[2], buffer);
 	return 1;
 }
 
@@ -589,10 +593,9 @@ static cell AMX_NATIVE_CALL LoggerLogInfo(AMX* amx, cell* params) {
 		return 0;
 	}
 
-	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(p, "function", LOG_SEVERITY_INFO, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_INFO, params[2], buffer);
 	return 1;
 }
 
@@ -608,10 +611,9 @@ static cell AMX_NATIVE_CALL LoggerLogDebug(AMX* amx, cell* params) {
 		return 0;
 	}
 
-	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(p, "function", LOG_SEVERITY_DEBUG, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_DEBUG, params[2], buffer);
 	return 1;
 }
 
