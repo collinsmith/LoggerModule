@@ -343,6 +343,7 @@ void Logger::log(AMX* amx, const int severity, const bool printStackTrace, const
 		pluginName,
 		function,
 		STRING(gpGlobals->mapname));
+	// Special case, append newline
 	*(formattedMessage + len) = '\n';
 	*(formattedMessage + len + 1) = '\0';
 
