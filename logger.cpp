@@ -465,7 +465,7 @@ static cell AMX_NATIVE_CALL LoggerCreate(AMX* amx, cell* params) {
 	Logger *logger = LoggerHandles.lookup(loggerHandle);
 	assert (logger);
 	CPluginMngr::CPlugin *p = (CPluginMngr::CPlugin*)amx->userdata[3];
-	logger->log(p, "function", LOG_SEVERITY_INFO, "Logger initialized; map: %s", STRING(gpGlobals->mapname));
+	logger->log(p, "function", LOG_SEVERITY_INFO, false, "Logger initialized; map: %s", STRING(gpGlobals->mapname));
 	return static_cast<cell>(loggerHandle);
 }
 
