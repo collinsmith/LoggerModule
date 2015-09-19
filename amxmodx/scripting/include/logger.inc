@@ -29,4 +29,9 @@ native bool:LoggerDestroy(&Logger:logger);
 native LoggerGetVerbosity(Logger:logger);
 native LoggerSetVerbosity(Logger:logger, verbosity);
 
-native LoggerLog(Logger:logger, severity, const format[], any:...);
+native LoggerLog(Logger:logger, severity, bool:printStackTrace, const format[], any:...);
+
+native LoggerLogError(Logger:logger, bool:printStackTrace = true, const format[], any:...);
+native LoggerLogWarn(Logger:logger, bool:printStackTrace = true, const format[], any:...);
+native LoggerLogInfo(Logger:logger, bool:printStackTrace = false, const format[], any:...);
+native LoggerLogDebug(Logger:logger, bool:printStackTrace = false, const format[], any:...);

@@ -72,7 +72,7 @@ public:
 	const char* getTimeFormat() const;
 	const char* getPathFormat() const;
 
-	void log(CPluginMngr::CPlugin *plugin, const char *function, int severity, const char* format, ...) const;
+	void log(CPluginMngr::CPlugin *plugin, const char *function, const int severity, const bool printStackTrace, const char* format, ...) const;
 };
 
 extern NativeHandler<Logger> LoggerHandles;
