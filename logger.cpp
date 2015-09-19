@@ -292,7 +292,6 @@ char* build_pathname_and_mkdir_r(char *buffer, size_t maxlen, const char *fmt, .
 #else
 				*ptr = '\0';
 				mkdir(buffer);
-				MF_PrintSrvConsole("mkdir = %s\n", buffer);
 				*ptr = PATH_SEP_CHAR;
 #endif
 		}
@@ -376,7 +375,6 @@ void Logger::log(CPluginMngr::CPlugin *plugin, const char *function, const int s
 	static char fullPath[256];
 	if (getPathFormat()[0] != '\0') {
 		build_pathname_and_mkdir_r(fullPath, sizeof fullPath - 1, "%s/%s/%s.log", amxxLogsDir, path, fileName);
-		MF_PrintSrvConsole("Path = %s\n", fullPath);
 	} else {
 		build_pathname_and_mkdir_r(fullPath, sizeof fullPath - 1, "%s/%s.log", amxxLogsDir, fileName);
 	}
