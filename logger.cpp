@@ -711,7 +711,7 @@ static cell AMX_NATIVE_CALL LoggerLog(AMX* amx, cell* params) {
 
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 4, &len);
-	logger->log(amx, params[2], params[3], buffer);
+	logger->log(amx, params[2], params[3] == 1, buffer);
 	return 1;
 }
 
@@ -729,7 +729,7 @@ static cell AMX_NATIVE_CALL LoggerLogError(AMX* amx, cell* params) {
 
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(amx, LOG_SEVERITY_ERROR, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_ERROR, params[2] == 1, buffer);
 	return 1;
 }
 
@@ -747,7 +747,7 @@ static cell AMX_NATIVE_CALL LoggerLogWarn(AMX* amx, cell* params) {
 
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(amx, LOG_SEVERITY_WARN, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_WARN, params[2] == 1, buffer);
 	return 1;
 }
 
@@ -765,7 +765,7 @@ static cell AMX_NATIVE_CALL LoggerLogInfo(AMX* amx, cell* params) {
 
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(amx, LOG_SEVERITY_INFO, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_INFO, params[2] == 1, buffer);
 	return 1;
 }
 
@@ -783,7 +783,7 @@ static cell AMX_NATIVE_CALL LoggerLogDebug(AMX* amx, cell* params) {
 
 	int len;
 	char* buffer = MF_FormatAmxString(amx, params, 3, &len);
-	logger->log(amx, LOG_SEVERITY_DEBUG, params[2], buffer);
+	logger->log(amx, LOG_SEVERITY_DEBUG, params[2] == 1, buffer);
 	return 1;
 }
 

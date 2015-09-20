@@ -11,7 +11,6 @@
  * STOCKS
  ******************************************************************************/
 
-// native LoggerLogDebug(Logger:logger, const format[], any:...);
-// native LoggerLogInfo(Logger:logger, const format[], any:...);
-// native LoggerLogWarn(Logger:logger, const format[], any:...);
-// native LoggerLogError(Logger:logger, const format[], any:...);
+stock Severity:severity(severity) {
+	return Severity:severity;
+}

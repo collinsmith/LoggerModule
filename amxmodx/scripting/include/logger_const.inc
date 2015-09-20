@@ -25,12 +25,12 @@ enum Severity {
  * CONSTANTS
  ******************************************************************************/
 
-stock const DEFAULT_LOGGER_NAME_FORMAT[] = "%n_%d";
-stock const DEFAULT_LOGGER_MSG_FORMAT[]  = "[%5s] [%t] %n::%f: %l";
-stock const DEFAULT_LOGGER_DATE_FORMAT[] = "%Y-%m-%d";
-stock const DEFAULT_LOGGER_TIME_FORMAT[] = "%H:%M:%S";
-stock const DEFAULT_LOGGER_VERBOSITY     = Severity_Warn;
-stock const DEFAULT_LOGGER_PATH          = "";
+stock const DEFAULT_LOGGER_NAME_FORMAT[]      = "%n_%d";
+stock const DEFAULT_LOGGER_MSG_FORMAT[]       = "[%5s] [%t] %n::%f: %l";
+stock const DEFAULT_LOGGER_DATE_FORMAT[]      = "%Y-%m-%d";
+stock const DEFAULT_LOGGER_TIME_FORMAT[]      = "%H:%M:%S";
+stock const Severity:DEFAULT_LOGGER_VERBOSITY = Severity_Warn;
+stock const DEFAULT_LOGGER_PATH               = "";
 
 stock const SEVERITY_INVALID_STRING[] = "INVALID";
 stock const SEVERITY_ALL_STRING[]     = "ALL";
